@@ -46,10 +46,10 @@ Protected Class EnumItem
 		    lines.Append "        return " + name + "." + cleanedSrcLines(i) 
 		  Next
 		  
-		  lines.append "  end select"
-		  
 		  lines.Append "Else"
 		  lines.Append " raise new UnsupportedOperationException"
+		  
+		  lines.append "  end select"
 		  
 		  
 		  lines.append "End Function"
