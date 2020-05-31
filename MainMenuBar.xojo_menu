@@ -94,5 +94,26 @@ Begin Menu MainMenuBar
          Visible = True
       End
    End
+   Begin MenuItem ViewMenu
+      SpecialMenu = 0
+      Text = "View"
+      Index = -2147483648
+      AutoEnable = True
+      Visible = True
+      Begin MenuItem ViewExtendWriter
+         SpecialMenu = 0
+         Text = "Extend Writer"
+         Index = -2147483648
+         AutoEnable = True
+         Visible = True
+      End
+      Begin MenuItem ViewEnumEditor
+         SpecialMenu = 0
+         Text = "Enumeration Editor"
+         Index = -2147483648
+         AutoEnable = True
+         Visible = True
+      End
+   End
 End
 #tag EndMenu

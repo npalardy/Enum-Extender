@@ -1,5 +1,5 @@
 #tag Window
-Begin Window Window1
+Begin Window winEnumEditor
    BackColor       =   &cFFFFFF00
    Backdrop        =   0
    CloseButton     =   True
@@ -16,45 +16,17 @@ Begin Window Window1
    MaxHeight       =   32000
    MaximizeButton  =   True
    MaxWidth        =   32000
-   MenuBar         =   1875030015
+   MenuBar         =   0
    MenuBarVisible  =   True
    MinHeight       =   64
    MinimizeButton  =   True
    MinWidth        =   64
    Placement       =   0
    Resizeable      =   True
-   Title           =   "Enum Extender"
+   Title           =   "Untitled"
    Visible         =   True
    Width           =   600
-   Begin Canvas Canvas1
-      AcceptFocus     =   False
-      AcceptTabs      =   False
-      AutoDeactivate  =   True
-      Backdrop        =   0
-      DoubleBuffer    =   False
-      Enabled         =   True
-      EraseBackground =   True
-      Height          =   16
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Left            =   20
-      LockBottom      =   False
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   True
-      Scope           =   2
-      TabIndex        =   0
-      TabPanelIndex   =   0
-      TabStop         =   True
-      Top             =   20
-      Transparent     =   True
-      UseFocusRing    =   True
-      Visible         =   True
-      Width           =   100
-   End
-   Begin TextArea TextArea1
+   Begin TextArea txtEnumValues
       AcceptTabs      =   False
       Alignment       =   0
       AutoDeactivate  =   True
@@ -66,12 +38,12 @@ Begin Window Window1
       DataSource      =   ""
       Enabled         =   True
       Format          =   ""
-      Height          =   360
+      Height          =   263
       HelpTag         =   ""
       HideSelection   =   True
       Index           =   -2147483648
       Italic          =   False
-      Left            =   143
+      Left            =   20
       LimitText       =   0
       LineHeight      =   0.0
       LineSpacing     =   1.0
@@ -82,7 +54,7 @@ Begin Window Window1
       LockTop         =   True
       Mask            =   ""
       Multiline       =   True
-      ReadOnly        =   True
+      ReadOnly        =   False
       Scope           =   2
       ScrollbarHorizontal=   False
       ScrollbarVertical=   True
@@ -95,17 +67,48 @@ Begin Window Window1
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   20
+      Top             =   85
       Transparent     =   False
       Underline       =   False
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   437
+      Width           =   560
    End
-   Begin CheckBox chkExtends
+   Begin PushButton pushCreateClipboard
       AutoDeactivate  =   True
       Bold            =   False
-      Caption         =   "Extends"
+      ButtonStyle     =   "0"
+      Cancel          =   False
+      Caption         =   "Create on clipboard"
+      Default         =   False
+      Enabled         =   False
+      Height          =   20
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   437
+      LockBottom      =   True
+      LockedInPosition=   False
+      LockLeft        =   False
+      LockRight       =   True
+      LockTop         =   False
+      Scope           =   2
+      TabIndex        =   2
+      TabPanelIndex   =   0
+      TabStop         =   True
+      TextFont        =   "System"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   360
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   143
+   End
+   Begin Label Label1
+      AutoDeactivate  =   True
+      Bold            =   False
       DataField       =   ""
       DataSource      =   ""
       Enabled         =   True
@@ -114,61 +117,31 @@ Begin Window Window1
       Index           =   -2147483648
       InitialParent   =   ""
       Italic          =   False
-      Left            =   39
+      Left            =   20
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
       LockRight       =   False
       LockTop         =   True
+      Multiline       =   False
       Scope           =   2
-      State           =   1
-      TabIndex        =   2
-      TabPanelIndex   =   0
-      TabStop         =   True
-      TextFont        =   "System"
-      TextSize        =   0.0
-      TextUnit        =   0
-      Top             =   74
-      Transparent     =   False
-      Underline       =   False
-      Value           =   True
-      Visible         =   True
-      Width           =   100
-   End
-   Begin CheckBox chkToString
-      AutoDeactivate  =   True
-      Bold            =   False
-      Caption         =   "#ToStringFromString"
-      DataField       =   ""
-      DataSource      =   ""
-      Enabled         =   True
-      Height          =   55
-      HelpTag         =   ""
-      Index           =   -2147483648
-      InitialParent   =   ""
-      Italic          =   False
-      Left            =   39
-      LockBottom      =   False
-      LockedInPosition=   False
-      LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   True
-      Scope           =   2
-      State           =   1
+      Selectable      =   False
       TabIndex        =   3
       TabPanelIndex   =   0
       TabStop         =   True
+      Text            =   "Enumeration name"
+      TextAlign       =   0
+      TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   88
+      Top             =   20
       Transparent     =   False
       Underline       =   False
-      Value           =   True
       Visible         =   True
-      Width           =   100
+      Width           =   123
    End
-   Begin Label Label1
+   Begin Label Label2
       AutoDeactivate  =   True
       Bold            =   False
       DataField       =   ""
@@ -191,330 +164,219 @@ Begin Window Window1
       TabIndex        =   4
       TabPanelIndex   =   0
       TabStop         =   True
-      Text            =   "Write as"
+      Text            =   "Values (1 per line)"
       TextAlign       =   0
       TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   48
+      Top             =   52
       Transparent     =   False
       Underline       =   False
       Visible         =   True
-      Width           =   100
+      Width           =   123
    End
-   Begin PushButton HelpButton
+   Begin TextField txtEnumName
+      AcceptTabs      =   False
+      Alignment       =   0
       AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
       Bold            =   False
-      ButtonStyle     =   "8"
-      Cancel          =   False
-      Caption         =   "?"
-      Default         =   False
+      Border          =   True
+      CueText         =   ""
+      DataField       =   ""
+      DataSource      =   ""
       Enabled         =   True
-      Height          =   36
+      Format          =   ""
+      Height          =   22
       HelpTag         =   ""
       Index           =   -2147483648
-      InitialParent   =   ""
       Italic          =   False
-      Left            =   -4
-      LockBottom      =   True
+      Left            =   165
+      LimitText       =   0
+      LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
-      LockRight       =   False
-      LockTop         =   False
+      LockRight       =   True
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
       Scope           =   2
-      TabIndex        =   5
+      TabIndex        =   0
       TabPanelIndex   =   0
       TabStop         =   True
+      Text            =   ""
+      TextColor       =   &c00000000
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   371
+      Top             =   19
       Transparent     =   False
       Underline       =   False
+      UseFocusRing    =   True
       Visible         =   True
-      Width           =   36
+      Width           =   415
    End
 End
 #tag EndWindow
 
 #tag WindowCode
-	#tag Event
-		Function DragOver(x As Integer, y As Integer, obj As DragItem, action As Integer) As Boolean
-		  ShouldAcceptDrag(obj)
-		End Function
-	#tag EndEvent
-
-	#tag Event
-		Sub DropObject(obj As DragItem, action As Integer)
-		  HandleDrop(obj)
+	#tag Method, Flags = &h1
+		Protected Sub DoEnableButtons()
 		  
-		  mShouldFill = False
-		  Canvas1.Invalidate
-		End Sub
-	#tag EndEvent
-
-	#tag Event
-		Sub MouseExit()
-		  mShouldFill = False
-		  Canvas1.Invalidate
-		End Sub
-	#tag EndEvent
-
-	#tag Event
-		Sub Open()
-		  Me.AcceptRawDataDrop("RIDE")
-		  
-		  
-		End Sub
-	#tag EndEvent
-
-
-	#tag Method, Flags = &h21
-		Private Sub HandleDrop(obj as DragItem)
-		  Redim droppedData(-1)
-		  
-		  mShouldFill = False
-		  
-		  Canvas1.Invalidate
-		  
-		  Do
-		    
-		    If obj.RawDataAvailable("RIDE") = False Then
-		      
-		    Else
-		      
-		      Dim data As String = obj.RawData("RIDE")
-		      droppedData.Append data
-		      
-		      processOneDrop( data )
-		      
-		    End If
-		    
-		  Loop Until obj.NextItem = False
-		  
-		  
-		  Dim c As New Clipboard
-		  
-		  c.AddRawData(TextArea1.Text, "public.utf8-plain-text")
-		  c.Text = TextArea1.Text
-		End Sub
-	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Sub ProcessOneDrop(data as string)
-		  // a dropped enum looks like
-		  // Role=CodeItem
-		  // Type=Enum
-		  // Data=436E7374477275700000014000009B02456E636F496E7420080001006E616D655374726E0000000C536F72744F72646572696E67666C6167496E742000000001747970655374726E00000007496E7465676572206E616D655374726E0000000C536F72744F72646572696E67436F6D705374726E000000005673626C496E74200000000150744944496E742029FEE7FF736F726347727570000000A400009B03456E636F496E7420080001007372636C5374726E000000096E6F6E65203D202D312020207372636C5374726E00000009636F6E7374616E74732020207372636C5374726E000000106576656E74646566696E6974696F6E737372636C5374726E0000000A70726F7065727469657320207372636C5374726E0000000D6576656E7468616E646C6572732020207372636C5374726E000000076D6574686F647320456E6447496E742000009B03456E6447496E742000009B02
-		  // PartID=1334783999
-		  // Properties=ItemID:373034353731333931
-		  // Compatibility=30
-		  
-		  // data is a hexed version of the binary data
-		  
-		  Dim parts() As String = Split( ReplaceLineEndings( data, EndOfLine ), EndOfLine )
-		  
-		  For i As Integer = 0 To parts.ubound
-		    Dim key As String
-		    Dim value As String
-		    key = parts(i).NthField("=",1)
-		    value = parts(i).NthField("=",2)
-		    
-		    If key = "Data" Then
-		      
-		      Dim thisEnum As New EnumItem( value )
-		      
-		      If chkExtends.Value Then
-		        TextArea1.AppendText thisEnum.AsExtensions + EndOfLine
-		      End If
-		      If chkToString.Value Then
-		        TextArea1.AppendText thisEnum.AsToStringFromString + EndOfLine
-		      End If
-		      
-		    End If
-		    
-		  Next
+		  pushCreateClipboard.Enabled = (txtEnumName.Text <> "") And (txtEnumValues.Text <> "")
 		  
 		End Sub
 	#tag EndMethod
-
-	#tag Method, Flags = &h21
-		Private Sub ShouldAcceptDrag(obj as DragItem)
-		  Dim canAccept As Boolean = True
-		  
-		  Do
-		    
-		    If obj.RawDataAvailable("RIDE") = False Then
-		      canAccept = false
-		      
-		    Else
-		      
-		      // we have to poke through the data itself
-		      // what ROLE ? Type ? 
-		      Dim data As String = obj.RawData("RIDE")
-		      Dim parts() As String = Split( ReplaceLineEndings( data, EndOfLine ), EndOfLine )
-		      
-		      Dim hasRightRole As Boolean
-		      Dim hasRightType As Boolean
-		      
-		      For i As Integer = 0 To parts.ubound
-		        Dim key As String
-		        Dim value As String
-		        key = parts(i).NthField("=",1)
-		        value = parts(i).NthField("=",2)
-		        Select Case key
-		          
-		        Case "Role"
-		          If value = "CodeItem" Then
-		            hasRightRole = True
-		          End If
-		          
-		        Case "Type"
-		          If value = "Enum" Then
-		            hasRightType = True
-		          End If
-		          
-		        End Select
-		        
-		      Next
-		      
-		      canAccept = canAccept And (hasRightRole And hasRightType)
-		      
-		    End If
-		    
-		  Loop Until obj.NextItem = False
-		  
-		  mShouldFill = canAccept
-		  Canvas1.Invalidate
-		End Sub
-	#tag EndMethod
-
-
-	#tag Property, Flags = &h21
-		Private droppedData() As string
-	#tag EndProperty
-
-	#tag Property, Flags = &h21
-		Private mShouldFill As boolean
-	#tag EndProperty
-
-
-	#tag Constant, Name = ToStringFromString, Type = String, Dynamic = False, Default = \"ToString /\nFromString", Scope = Private
-	#tag EndConstant
 
 
 #tag EndWindowCode
 
-#tag Events Canvas1
+#tag Events txtEnumValues
 	#tag Event
-		Function DragOver(x As Integer, y As Integer, obj As DragItem, action As Integer) As Boolean
-		  ShouldAcceptDrag(obj)
-		End Function
-	#tag EndEvent
-	#tag Event
-		Sub DropObject(obj As DragItem, action As Integer)
-		  HandleDrop(obj)
-		  
-		  mShouldFill = False
-		  
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Sub Open()
-		  Me.AcceptRawDataDrop("RIDE")
-		  
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Sub Paint(g As Graphics, areas() As REALbasic.Rect)
-		  Const mFillDropRectColor = &c00FF00
-		  
-		  g.ClearRect 0,0,g.width,g.height
-		  
-		  If mShouldFill Then
-		    g.forecolor = mFillDropRectColor
-		    g.FillRect 0,0,g.width,g.height
-		  End If
-		  
-		  g.forecolor = &cffffff
-		  g.DrawRect 0,0,g.width,g.height
-		  
-		  
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Sub MouseExit()
-		  mShouldFill = false
+		Sub TextChange()
+		  DoEnableButtons
 		End Sub
 	#tag EndEvent
 #tag EndEvents
-#tag Events TextArea1
-	#tag Event
-		Sub Open()
-		  Me.AcceptRawDataDrop("RIDE")
-		  
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Function DragOver(x As Integer, y As Integer, obj As DragItem, action As Integer) As Boolean
-		  ShouldAcceptDrag(obj)
-		End Function
-	#tag EndEvent
-	#tag Event
-		Sub DropObject(obj As DragItem, action As Integer)
-		  HandleDrop(obj)
-		  
-		  mShouldFill = False
-		  Canvas1.Invalidate
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Sub MouseExit()
-		  mShouldFill = False
-		  Canvas1.Invalidate
-		End Sub
-	#tag EndEvent
-#tag EndEvents
-#tag Events chkExtends
+#tag Events pushCreateClipboard
 	#tag Event
 		Sub Action()
-		  TextArea1.Text = ""
+		  // we're ging to write into a binarystream that is back by a memoryblock
+		  Dim mb As New memoryblock(0)
+		  mb.LittleEndian = False
 		  
-		  For i As Integer = 0 To droppedData.Ubound
+		  Dim bs As New BinaryStream(mb)
+		  
+		  #If False
+		    // the test sample we have in Module1.Untitled
 		    
-		    processOneDrop( droppedData(i) )
+		    // =00000000:  c0 00 00 00 45 6e 75 6d 43 6e  ¿...EnumCn
+		    // =00000010:  73 74 47 72 75 70 00 00 00 a8  stGrup...®
+		    // =00000020:  00 00 7a 54 45 6e 63 6f 49 6e  ..zTEncoIn
+		    // =00000030:  74 20 08 00 01 00 6e 61 6d 65  t ....name
+		    // =00000040:  53 74 72 6e 00 00 00 08 55 6e  Strn....Un
+		    // =00000050:  74 69 74 6c 65 64 66 6c 61 67  titledflag
+		    // =00000060:  49 6e 74 20 00 00 00 00 6e 61  Int ....na
+		    // =00000070:  6d 65 53 74 72 6e 00 00 00 08  meStrn....
+		    // =00000080:  55 6e 74 69 74 6c 65 64 43 6f  UntitledCo
+		    // =00000090:  6d 70 53 74 72 6e 00 00 00 00  mpStrn....
+		    // =00000100:  56 73 62 6c 49 6e 74 20 00 00  VsblInt ..
+		    // =00000110:  00 01 50 74 49 44 49 6e 74 20  ..PtIDInt 
+		    // =00000120:  4c 34 7f ff 73 6f 72 63 47 72  L4..sorcGr
+		    // =00000130:  75 70 00 00 00 28 00 00 7a 55  up...(..zU
+		    // =00000140:  45 6e 63 6f 49 6e 74 20 08 00  EncoInt ..
+		    // =00000150:  01 00 73 72 63 6c 53 74 72 6e  ..srclStrn
+		    // =00000160:  00 00 00 09 61 f0 9f 91 8d 62  ....a...b
+		    // =00000170:  c3 ba 63 20 20 20 45 6e 64 47  √∫c   EndG
+		    // =00000180:  49 6e 74 20 00 00 7a 55 45 6e  Int ..zUEn
+		    // =00000190:  64 47 49 6e 74 20 00 00 7a 54  dGInt ..zT
 		    
-		  Next
+		    // write this block type
+		    Dim g As New GroupWriter( bs, "Cnst" )
+		    
+		    Dim i As New IntWriter( bs, "Enco", Encodings.UTF8.code)
+		    i = Nil
+		    
+		    Dim s As New StringWriter( bs, "name", "Untitled" )
+		    s = Nil
+		    
+		    i = New IntWriter( bs, "flag", &h0 )
+		    i = Nil
+		    
+		    s =  New StringWriter( bs, "name", "Untitled" )
+		    s = Nil
+		    
+		    s =  New StringWriter( bs, "Comp", "" )
+		    s = Nil
+		    
+		    i = New IntWriter( bs, "Vsbl", &h01 )
+		    i = Nil
+		    
+		    // we have no reasonable way to craft a unique new 
+		    // part id but the paste assigns a new one anyway
+		    i = New IntWriter( bs, "PtID", &h4c347fff )
+		    i = Nil
+		    
+		    Dim g1 As New GroupWriter( bs, "sorc" )
+		    
+		    i = New IntWriter( bs, "Enco", Encodings.UTF8.code )
+		    i = Nil
+		    
+		    s =  New StringWriter( bs, "srcl", "a👍búc" )
+		    s = Nil
+		    
+		    
+		    g1 = Nil
+		    
+		    g = Nil
+		  #EndIf
+		  
+		  #If True
+		    // write this block type
+		    Dim g As New GroupWriter( bs, "Cnst" )
+		    
+		    Dim i As New IntWriter( bs, "Enco", Encodings.UTF8.code)
+		    i = Nil
+		    
+		    Dim s As New StringWriter( bs, "name", txtEnumName.Text )
+		    s = Nil
+		    
+		    i = New IntWriter( bs, "flag", &h0 )
+		    i = Nil
+		    
+		    s =  New StringWriter( bs, "name", txtEnumName.Text )
+		    s = Nil
+		    
+		    s =  New StringWriter( bs, "Comp", "" )
+		    s = Nil
+		    
+		    i = New IntWriter( bs, "Vsbl", &h01 )
+		    i = Nil
+		    
+		    // we have no reasonable way to craft a unique new 
+		    // part id but the paste assigns a new one anyway
+		    i = New IntWriter( bs, "PtID", &h4c347fff ) 
+		    i = Nil
+		    
+		    Dim lines() As String = Split( ReplaceLineEndings( txtEnumValues.Text, EndOfLine), EndOfLine )
+		    
+		    Dim g1 As New GroupWriter( bs, "sorc" )
+		    i = New IntWriter( bs, "Enco", Encodings.UTF8.code )
+		    i = Nil
+		    
+		    For Each line As String In lines
+		      s =  New StringWriter( bs, "srcl", line )
+		      s = Nil
+		    Next
+		    
+		    // end of src line group
+		    g1 = Nil
+		    
+		    // end of Cnst group
+		    g = Nil
+		  #EndIf
+		  
+		  Dim result As String = mb.StringValue(0, bs.Length)
+		  
+		  Dim c As New Clipboard
+		  
+		  c.AddRawData( ChrB(&hC0) + ChrB(&h0) + ChrB(&h0) + ChrB(&h0) + "Enum" + result , "RSCI")
+		  
+		  Break
+		  
+		  
+		  
+		  
 		End Sub
 	#tag EndEvent
 #tag EndEvents
-#tag Events chkToString
+#tag Events txtEnumName
 	#tag Event
-		Sub Open()
-		  Me.Caption = "ToString" + EndOfLine + "FromString"
-		  
-		End Sub
-	#tag EndEvent
-	#tag Event
-		Sub Action()
-		  TextArea1.Text = ""
-		  
-		  For i As Integer = 0 To droppedData.Ubound
-		    
-		    processOneDrop( droppedData(i) )
-		    
-		  Next
-		End Sub
-	#tag EndEvent
-#tag EndEvents
-#tag Events HelpButton
-	#tag Event
-		Sub Action()
-		  Dim w As New HelpWindow
-		  
-		  w.ShowModalWithin ( Self )
-		  
+		Sub TextChange()
+		  DoEnableButtons
 		End Sub
 	#tag EndEvent
 #tag EndEvents

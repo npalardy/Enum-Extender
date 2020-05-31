@@ -137,10 +137,12 @@ Protected Class EnumItem
 		    Case "Cnst" // 436E7374 Cnst
 		      
 		    Case "Grup" // 47727570 Grup
-		      Dim outerGroupSize As Integer = decoded.Int32Value(offset) // 00000140   <<< size including GRUP header & trailer (140 = 320 in dec)
+		      Dim outerGroupSize As Integer 
+		      outerGroupSize = decoded.Int32Value(offset) // 00000140   <<< size including GRUP header & trailer (140 = 320 in dec)
 		      offset = offset + 4
 		      
-		      Dim outerGroupID As Integer = decoded.Int32Value(offset) // 00009D15   ••�•   <<< group ID (see end of group)
+		      Dim outerGroupID As Integer
+		      outerGroupID = decoded.Int32Value(offset) // 00009D15   ••�•   <<< group ID (see end of group)
 		      offset = offset + 4
 		      
 		    Case "Enco" // 456E636F Enco     << encoding
@@ -149,7 +151,8 @@ Protected Class EnumItem
 		      End If
 		      offset = offset + 4
 		      
-		      Dim outerEncodingID As Integer = decoded.Int32Value(offset) // 08000100 ••••     << encoding id as an int (should be utf 8? YUP !) 
+		      Dim outerEncodingID As Integer
+		      outerEncodingID = decoded.Int32Value(offset) // 08000100 ••••     << encoding id as an int (should be utf 8? YUP !) 
 		      offset = offset + 4
 		      
 		    Case "name" // 6E616D65 name     << prop name (name) 
@@ -161,14 +164,17 @@ Protected Class EnumItem
 		      End If
 		      offset = offset + 4
 		      
-		      Dim scope As Integer =  decoded.Int32Value(offset) // 00000001 ••••     // public/global = 0x0, protected = 0x01, private = 0x21
+		      Dim scope As Integer
+		      scope =  decoded.Int32Value(offset) // 00000001 ••••     // public/global = 0x0, protected = 0x01, private = 0x21
 		      offset = offset + 4
 		      
 		    Case "type"  // 74797065 type     // data type of this enum
-		      Dim value As String = ReadString(decoded, offset)
+		      Dim value As String
+		      value = ReadString(decoded, offset)
 		      
 		    Case "Comp"// 436F6D70 Comp    // compat flags 
-		      Dim value As String  = ReadString(decoded, offset)
+		      Dim value As String
+		      value = ReadString(decoded, offset)
 		      
 		    Case "Vsbl"
 		      If "Int " <> decoded.StringValue(offset, 4) Then 
@@ -176,7 +182,8 @@ Protected Class EnumItem
 		      End If
 		      offset = offset + 4
 		      
-		      Dim visibility As Integer =  decoded.Int32Value(offset) 
+		      Dim visibility As Integer
+		      visibility =  decoded.Int32Value(offset) 
 		      offset = offset + 4
 		      
 		    Case "PtID"
@@ -185,7 +192,8 @@ Protected Class EnumItem
 		      End If
 		      offset = offset + 4
 		      
-		      Dim partID As Integer =  decoded.Int32Value(offset) 
+		      Dim partID As Integer
+		      partID =  decoded.Int32Value(offset) 
 		      offset = offset + 4
 		      
 		    Case "sorc"  // 74797065 type     // data type of this enum
@@ -201,7 +209,8 @@ Protected Class EnumItem
 		      End If
 		      offset = offset + 4
 		      
-		      Dim groupID As Integer =  decoded.Int32Value(offset) 
+		      Dim groupID As Integer
+		      groupID =  decoded.Int32Value(offset) 
 		      offset = offset + 4
 		      
 		    Else
@@ -243,8 +252,8 @@ Protected Class EnumItem
 		// 
 		// 436E7374 Cnst
 		// 47727570 Grup
-		// 00000140   •••@   <<< size including GRUP header & trailer (140 = 320 in dec)
-		// 00009D15   ••�•   <<< group ID (see end of group)
+		// 00000140 •••@   <<< size including GRUP header & trailer (140 = 320 in dec)
+		// 00009D15 ••�•   <<< group ID (see end of group)
 		// 456E636F Enco     << encoding
 		// 496E7420 Int      << data type of next bit
 		// 08000100 ••••     << encoding id as an int (should be utf 8? YUP !) 
