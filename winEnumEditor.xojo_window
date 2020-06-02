@@ -341,7 +341,7 @@ End
 		    i = New IntWriter( bs, "PtID", &h4c347fff ) 
 		    i = Nil
 		    
-		    Dim lines() As String = Split( ReplaceLineEndings( txtEnumValues.Text, EndOfLine), EndOfLine )
+		    Dim lines() As String = Split( ReplaceLineEndings( Trim(txtEnumValues.Text), EndOfLine), EndOfLine )
 		    
 		    Dim g1 As New GroupWriter( bs, "sorc" )
 		    i = New IntWriter( bs, "Enco", Encodings.UTF8.code )
@@ -363,10 +363,12 @@ End
 		  
 		  Dim c As New Clipboard
 		  
-		  c.AddRawData( ChrB(&hC0) + ChrB(&h0) + ChrB(&h0) + ChrB(&h0) + "Enum" + result , "RSCI")
+		  Dim sizeMB As New MemoryBlock(4)
+		  sizeMB.Int32Value(0) = result.LenB
+		  
+		  c.AddRawData( sizeMB.StringValue(0,4) + "Enum" + result , "RSCI")
 		  
 		  Break
-		  
 		  
 		  
 		  
