@@ -58,7 +58,7 @@ Begin Window winEnumEditor
       Scope           =   2
       ScrollbarHorizontal=   False
       ScrollbarVertical=   True
-      Styled          =   True
+      Styled          =   False
       TabIndex        =   1
       TabPanelIndex   =   0
       TabStop         =   True
@@ -368,7 +368,6 @@ End
 		  
 		  c.AddRawData( sizeMB.StringValue(0,4) + "Enum" + result , "RSCI")
 		  
-		  Break
 		  
 		  
 		  

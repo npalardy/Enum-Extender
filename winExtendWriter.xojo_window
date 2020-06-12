@@ -86,7 +86,7 @@ Begin Window winExtendWriter
       Scope           =   2
       ScrollbarHorizontal=   False
       ScrollbarVertical=   True
-      Styled          =   True
+      Styled          =   False
       TabIndex        =   1
       TabPanelIndex   =   0
       TabStop         =   True
