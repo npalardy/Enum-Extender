@@ -15,7 +15,7 @@ Protected Class GroupWriter
 		  outputstream.Write "Grup"
 		  Self.m_BackPatchPosition = outputstream.Position
 		  
-		  outputstream.WriteInt32 0 // we batck patch this one eventually
+		  outputstream.WriteInt32 0 // we back patch this one eventually
 		  
 		  Self.m_GroupSizeStartPosition = outputstream.Position
 		  outputStream.WriteInt32 Me.m_ID
