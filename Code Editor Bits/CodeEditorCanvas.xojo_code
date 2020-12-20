@@ -3,24 +3,64 @@ Protected Class CodeEditorCanvas
 Inherits TextInputCanvas
 	#tag Event
 		Function BaselineAtIndex(index as integer) As integer
+		  //  Triggers the user's DiscardIncompleteText event. This is called when the
+		  //  system wishes to discard the incomplete text.
+		  // 
+		  // Gets: nothing
+		  // 
+		  // Returns: nothing
+		  
+		  // EditLog CurrentMethodName
+		  
 		  dbglog currentmethodname
 		End Function
 	#tag EndEvent
 
 	#tag Event
 		Function CharacterAtPoint(x as integer, y as integer) As integer
+		  //  Triggers the user's FireCharacterAtPoint event. The user should return the
+		  //  zero-based character index that exists at the given point in view-local 
+		  //  coordinates.
+		  // 
+		  // Gets: x - the x position
+		  //       y - the y position
+		  // 
+		  // Returns: the zero-based character index closest to the point
+		  
 		  dbglog currentmethodname
+		  
+		  
 		End Function
 	#tag EndEvent
 
 	#tag Event
 		Sub DiscardIncompleteText()
+		  //  Triggers the user's DiscardIncompleteText event. This is called when the
+		  //  system wishes to discard the incomplete text.
+		  // 
+		  // Gets: nothing
+		  // 
+		  // Returns: nothing
+		  
+		  // EditLog CurrentMethodName
+		  
 		  dbglog currentmethodname
 		End Sub
 	#tag EndEvent
 
 	#tag Event
 		Function DoCommand(command as string) As boolean
+		  // text system default binding are in /System/Library/Frameworks/AppKit.framework/Resources/StandardKeyBinding.dict.
+		  // to look at these grab a copy of https://en.freedownloadmanager.org/Mac-OS/KeyBindingsEditor-FREE.html
+		  //                      since its not posted to https://github.com/gknops?tab=repositories
+		  //
+		  // most of these map to a method in NSResponder.h
+		  
+		  
+		  // note we equate "forward" with "right"
+		  // and "back" with "left" which assumes
+		  // left to right writing systems
+		  
 		  dbglog currentmethodname + " " + command
 		  
 		  Select Case command
@@ -38,12 +78,30 @@ Inherits TextInputCanvas
 		  Case CmdMoveLeft
 		    mInsertionPosition = Max(mInsertionPosition - 1, 0)
 		    dbglog " insertion pos = " + Str(mInsertionPosition)
-		    // Case CmdMoveUp
-		    // Case CmdMoveDown
+		    
+		  Case CmdMoveUp
+		    Dim line, column As Integer
+		    PositionToLineAndColumn(mInsertionPosition, line, column)
+		    line = Max(line - 1, 0)
+		    mInsertionPosition = LineColumnToPosition(line, column)
+		    
+		    dbglog " insertion pos = " + Str(mInsertionPosition)
+		    
+		  Case CmdMoveDown
+		    Dim line, column As Integer
+		    PositionToLineAndColumn(mInsertionPosition, line, column)
+		    line = line + 1
+		    mInsertionPosition = LineColumnToPosition(line, column)
+		    dbglog " insertion pos = " + Str(mInsertionPosition)
+		    
 		    // Case CmdMoveWordForward
 		    // Case CmdMoveWordBackward
-		    // Case CmdMoveToBeginningOfLine
-		    // Case CmdMoveToEndOfLine
+		  Case CmdMoveToBeginningOfLine
+		    MoveToBeginningOfLine
+		    
+		  Case CmdMoveToEndOfLine
+		    MoveToEndOfLine
+		    
 		    // Case CmdMoveToBeginningOfParagraph
 		    // Case CmdMoveToEndOfParagraph
 		    // Case CmdMoveToEndOfDocument
@@ -81,8 +139,12 @@ Inherits TextInputCanvas
 		    // Case CmdMoveWordLeftAndModifySelection
 		    // 
 		    // // NSResponder: Selection movement and scrolling (added in 10.6)
-		    // Case CmdMoveToLeftEndOfLine
-		    // Case CmdMoveToRightEndOfLine
+		  Case CmdMoveToLeftEndOfLine
+		    MoveToBeginningOfLine
+		    
+		  Case CmdMoveToRightEndOfLine
+		    MoveToEndOfLine
+		    
 		    // Case CmdMoveToLeftEndOfLineAndModifySelection
 		    // Case CmdMoveToRightEndOfLineAndModifySelection
 		    // 
@@ -111,23 +173,16 @@ Inherits TextInputCanvas
 		    // Case CmdInsertTab
 		    // Case CmdInsertBacktab
 		  Case CmdInsertNewline
-		    mTextBuffer = mTextBuffer + EndOfLine
-		    mInsertionPosition = mInsertionPosition + Len(EndOfLine)
+		    InsertText(EndOfLine)
 		    Self.Invalidate
-		    
-		    dbglog CurrentMethodName + " insertion position = " + Str(mInsertionPosition)
 		    
 		  Case CmdInsertNewlineIgnoringFieldEditor
-		    mTextBuffer = mTextBuffer + EndOfLine
-		    mInsertionPosition = mInsertionPosition + Len(EndOfLine)
+		    InsertText(EndOfLine)
 		    Self.Invalidate
-		    dbglog CurrentMethodName + " insertion position = " + Str(mInsertionPosition)
 		    
 		  Case CmdInsertLineBreak
-		    mTextBuffer = mTextBuffer + EndOfLine
-		    mInsertionPosition = mInsertionPosition + Len(EndOfLine)
+		    InsertText(EndOfLine)
 		    Self.Invalidate
-		    dbglog CurrentMethodName + " insertion position = " + Str(mInsertionPosition)
 		    
 		    // Case CmdInsertParagraphSeparator
 		    // Case CmdInsertTabIgnoringFieldEditor
@@ -186,6 +241,12 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function FontNameAtLocation(location as integer) As string
+		  //  Triggers the user's FontNameAtLocation event. The implementor should return
+		  //  the font used for rendering the specified character.
+		  // 
+		  // Gets: location - the zero-based character index
+		  // Returns: the font name
+		  
 		  dbglog currentmethodname
 		  
 		  return self.TextFont
@@ -194,6 +255,14 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function FontSizeAtLocation(location as integer) As integer
+		  // FireFontSizeAtLocation
+		  // 
+		  //  Triggers the user's FontNameAtLocation event. The implementor should return
+		  //  the font size used for rendering the specified character.
+		  // 
+		  // Gets: location - the zero-based character index
+		  // Returns: the font size
+		  
 		  dbglog currentmethodname
 		  
 		  Return Self.TextSize
@@ -209,27 +278,38 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function IncompleteTextRange() As TextRange
+		  //  Triggers the user's FireIncompleteTextRange event. The implementor should return
+		  //  the range of the current incomplete text, or nil if there is no incomplete text.
+		  // 
+		  // Gets: nothing
+		  // Returns: the range of incomplete text (as a TextRange)
+		  
+		  // this gets called frequently when test is being input
+		  // this is the "marked text" in cocoa terms
+		  // see https://developer.apple.com/documentation/appkit/nstextinputclient?language=objc
+		  
+		  // we can return NIL if there is no "marked range"
+		  // uually this is when you deal with international input
+		  
 		  dbglog currentmethodname
 		  
-		  Return New TextRange(mInsertionPosition-1, 1)
+		  Return Nil // mIncompleteRange
+		  
 		  
 		End Function
 	#tag EndEvent
 
 	#tag Event
 		Sub InsertText(text as string, range as TextRange)
-		  Text = ReplaceLineEndings(Text, EndOfLine)
+		  //  Triggers the user's InsertText event. The implementor should replace the content
+		  //  in its document at `range` with the given text. If `range` is nil, the 
+		  //  implementor should insert the text at its current selection.
+		  // 
+		  // Gets: text - the text to insert
+		  //       range - the content range to replace (may be NULL)
+		  // Returns: nothing
 		  
-		  If range Is Nil Then
-		    dbglog currentmethodname + "[" + If(Text=EndOfLine,"<EOL>",Text) + "] nil range"
-		  Else
-		    dbglog currentmethodname + "[" + If(Text=EndOfLine,"<EOL>",Text) + "] range (location, length, end) = [" + Str(range.Location) + " ," + Str(range.Length) + ", " + Str(range.EndLocation) + "]"
-		  End If
-		  
-		  mTextBuffer = mTextBuffer + Text
-		  mInsertionPosition = mInsertionPosition + Len(Text)
-		  
-		  dbglog CurrentMethodName + " insertion position = " + Str(mInsertionPosition)
+		  InsertText(text)
 		  
 		  Me.Invalidate
 		End Sub
@@ -237,7 +317,16 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function IsEditable() As boolean
-		  ' dbglog currentmethodname + " " + Str(mEditable)
+		  //  Triggers the user's IsEditable event. The implementor should return whether
+		  //  or not its content can be edited.
+		  // 
+		  // Gets: nothing
+		  // Returns: whether or not the content is editable
+		  
+		  // can return TRUE and the canvas will then be "editable"
+		  // return false and its not
+		  
+		  // DbgLog CurrentMethodName + " = " + Str(Not ReadOnly)
 		  
 		  Return mEditable
 		  
@@ -247,6 +336,15 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function KeyFallsThrough(key as string) As boolean
+		  //  Triggers the user's KeyFallsThrough event. The implementor should return whether
+		  //  or not this key should be passed along to other Xojo code
+		  // 
+		  // Gets: key - the string containing the keystroke
+		  // Returns: whether or not the key should be passed along to the rest of the Xojo runtime
+		  
+		  // The enter key should fall through so that the
+		  // default button is pressed when enter is pressed
+		  
 		  dbglog currentmethodname
 		End Function
 	#tag EndEvent
@@ -366,14 +464,13 @@ Inherits TextInputCanvas
 		  
 		  // IF the cursor should be visible then draw it - otherwise dont and the clear above will have done the right thing
 		  If mCursorVisible Then
-		    Dim position As REALbasic.Point = PositionToLineAndColumn(mInsertionPosition)
-		    Dim drawPosition As REAlbasic.point = LineColumnToXY(g, position.X, position.Y)
-		    drawAtX = drawPosition.X
-		    drawAtY = drawPosition.Y
+		    Dim line, column As Integer
+		    PositionToLineAndColumn(mInsertionPosition, line, column)
+		    Dim drawPosition As REAlbasic.point = LineColumnToXY(g, line, column)
 		    
-		    dbglog " draw cursor @ insertion pos = " + Str(mInsertionPosition) + " x,y = " + str(drawAtX) +"," + str(drawAtY)
+		    'dbglog " draw cursor @ insertion pos = " + Str(mInsertionPosition) + " line, col" + str(line) + "," +Str(column) + "  x,y = " + Str(drawPosition.X) +"," + Str(drawPosition.Y)
 		    
-		    g.DrawLine drawAtX, drawAtY - g.TextAscent, drawAtX, drawAtY - g.TextAscent + g.TextHeight
+		    g.DrawLine drawPosition.X, drawPosition.Y - g.TextAscent, drawPosition.X, drawPosition.Y - g.TextAscent + g.TextHeight
 		  End If
 		  
 		End Sub
@@ -381,17 +478,25 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function RectForRange(byref range as TextRange) As REALbasic.Rect
+		  //  Triggers the user's RectForRange event. The implementor should return the
+		  //  rectangle occupied by the given range, relative to the control. If needed,
+		  //  the implementor can adjust the range to represent the text that was actually
+		  //  represented in the range (to account for word wrapping or other client-side
+		  //  features).
+		  // 
+		  // Gets: range - the requested text range
+		  // Returns: the rect the text takes in the control
+		  
 		  dbglog currentmethodname + " requested range =[" + Str(range.Location) + ", " + Str(range.Length) + "]"
 		  
-		  Dim pos As RealBasic.Point
-		  
 		  // get the position as a line & column #
-		  pos = PositionToLineAndColumn( range.Location )
+		  Dim line, column As Integer
+		  PositionToLineAndColumn( range.Location, line, column )
 		  
 		  Dim p As picture = GetMeasuringPicture
 		  
 		  // get the x (left) edge and (y) baseline for the position
-		  Dim position As REAlbasic.point = LineColumnToXY(p.Graphics, pos.X, pos.Y)
+		  Dim position As REAlbasic.point = LineColumnToXY(p.Graphics, line, column)
 		  
 		  // now computer the rectangle
 		  Dim width As Double = p.Graphics.StringWidth( Mid(mTextBuffer, range.Location, range.Length) )
@@ -405,27 +510,58 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Function SelectedRange() As TextRange
+		  //  Triggers the user's SelectedRange event. The implementor should return a valid
+		  //  range specifying which portion of the content is selected.
+		  // 
+		  // Gets: nothing
+		  // Returns: the range of the selection
+		  
 		  dbglog currentmethodname
 		  
-		  Return New TextRange(mInsertionPosition, 0)
+		  Return Nil
+		  // Return New TextRange(mInsertionPosition, 0)
 		  
 		End Function
 	#tag EndEvent
 
 	#tag Event
 		Sub SetIncompleteText(text as string, replacementRange as TextRange, relativeSelection as TextRange)
+		  //  Triggers the user's SetIncompleteText event. This is fired when the system
+		  //  has started (or is continuing) international text input and wishes to display
+		  //  'incomplete text'. Incomplete text (marked text, in Cocoa terms) is a temporary
+		  //  string displayed in the text during composition of the final input and is
+		  //  not actually part of the content until it has been committed (via InsertText).
+		  //  
+		  // Gets: text - the marked text (replaces any previous marked text)
+		  //       replacementRange - the range of text to replace
+		  //       relativeSelection - the new selection, relative to the start of the marked
+		  //                           text
+		  // Returns: nothing
+		  
 		  dbglog currentmethodname
 		End Sub
 	#tag EndEvent
 
 	#tag Event
 		Function TextForRange(range as TextRange) As string
+		  //  Triggers the user's TextForRange event. The implementor should return the substring
+		  //  of its content at the given range.
+		  // 
+		  // Gets: range - the range of text to return
+		  // Returns: the substring of the content
+		  
 		  dbglog currentmethodname
 		End Function
 	#tag EndEvent
 
 	#tag Event
 		Function TextLength() As integer
+		  //  Triggers the user's TextLength event. The implementor should return the length
+		  //  of its content (in characters).
+		  //
+		  // Gets: nothing
+		  // Returns: the content length
+		  
 		  dbglog currentmethodname
 		End Function
 	#tag EndEvent
@@ -526,6 +662,30 @@ Inherits TextInputCanvas
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
+		Protected Sub InsertText(theText as string, range as textRange = nil)
+		  theText = ReplaceLineEndings(theText, EndOfLine)
+		  
+		  If range Is Nil Then
+		    dbglog currentmethodname + "[" + If(theText=EndOfLine,"<EOL>",theText) + "] nil range"
+		  Else
+		    dbglog currentmethodname + "[" + If(theText=EndOfLine,"<EOL>",theText) + "] range (location, length, end) = [" + Str(range.Location) + " ," + Str(range.Length) + ", " + Str(range.EndLocation) + "]"
+		  End If
+		  
+		  Dim leftText As String = Left(mTextBuffer, mInsertionPosition)
+		  Dim rightText As String = Mid(mTextBuffer, mInsertionPosition + 1)
+		  
+		  dbglog CurrentMethodName + " [" + leftText + "] " + If(theText=EndOfLine,"<EOL>",theText) + "[" + rightText + "]"
+		  
+		  mTextBuffer = leftText + theText + rightText
+		  
+		  mInsertionPosition = mInsertionPosition + Len(theText)
+		  
+		  dbglog CurrentMethodName + " insertion position = " + Str(mInsertionPosition)
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
 		Protected Function LineColumnToPosition(line as integer, column as integer) As integer
 		  // NOTE this is NOT EFFICIENT !!!!!!
 		  // since we split things into lines in PAINT and again here
@@ -571,7 +731,7 @@ Inherits TextInputCanvas
 		  If lineNumber >= 0 And lineNumber <= lines.ubound Then
 		    Dim lineSeg As String = Left( lines(lineNumber), column ) 
 		    
-		    dbglog CurrentMethodName + " [" + lineSeg + "]"
+		    'dbglog CurrentMethodName + " [" + lineSeg + "]"
 		    
 		    X = g.StringWidth( lineseg )
 		  End If
@@ -581,28 +741,49 @@ Inherits TextInputCanvas
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
-		Protected Function PositionToLineAndColumn(position as integer) As REALbasic.Point
-		  Dim currPos As Integer
-		  Dim line As Integer
-		  Dim col As Integer
+		Protected Sub MoveToBeginningOfLine()
+		  Dim line, column As Integer
+		  PositionToLineAndColumn(mInsertionPosition, line, column)
+		  column = 0
+		  mInsertionPosition = LineColumnToPosition(line, column)
+		  dbglog " insertion pos = " + Str(mInsertionPosition)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Sub MoveToEndOfLine()
+		  Dim line, column As Integer
+		  PositionToLineAndColumn(mInsertionPosition, line, column)
+		  line = line + 1
+		  column = 0 - Len(EndOfLine)
+		  mInsertionPosition = LineColumnToPosition(line, column)
+		  dbglog " insertion pos = " + Str(mInsertionPosition)
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Sub PositionToLineAndColumn(position as integer, byref line as integer, byref column as integer)
+		  Dim currPos As Integer=1
+		  line = 0
+		  column = 0
 		  
-		  While currPos <= position
+		  While currPos < position+1
 		    
 		    If mTextBuffer.Mid(currPos,1) = EndOfLine Then
 		      line = line + 1
-		      col = 0
+		      column = 0
 		    Else
-		      col = col + 1
+		      column = column + 1
 		    End If
 		    
 		    currPos = currPos + 1
 		    
 		  Wend
 		  
-		  dbglog CurrentMethodName + " [line,col] = [" + str(line) + ", " + str(col) + "]"
+		  'dbglog CurrentMethodName + " [line,col] = [" + Str(line) + ", " + Str(column) + "]"
 		  
-		  Return New realbasic.point( line, col )
-		End Function
+		  
+		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
@@ -649,7 +830,7 @@ Inherits TextInputCanvas
 		    // column has been incremented once too many times
 		    column = column - 1
 		    
-		    dbglog CurrentMethodName + "[x,y] => [line,col] = [" + Str(lineNumber) + ", " + Str(column) + "] + [" + lineSeg + "]"
+		    'dbglog CurrentMethodName + "[x,y] => [line,col] = [" + Str(lineNumber) + ", " + Str(column) + "] + [" + lineSeg + "]"
 		    
 		  End If
 		  
