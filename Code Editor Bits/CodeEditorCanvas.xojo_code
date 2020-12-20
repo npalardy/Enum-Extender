@@ -28,7 +28,7 @@ Inherits TextInputCanvas
 		    // // NSResponder: Selection movement and scrolling
 		  Case CmdMoveForward
 		    mInsertionPosition = Min(mInsertionPosition + 1, Len(mTextBuffer))
-		    dbglog " insertion pos = " + str(mInsertionPosition)
+		    dbglog " insertion pos = " + Str(mInsertionPosition)
 		  Case CmdMoveRight
 		    mInsertionPosition = Min(mInsertionPosition + 1, Len(mTextBuffer))
 		    dbglog " insertion pos = " + Str(mInsertionPosition)
@@ -218,10 +218,12 @@ Inherits TextInputCanvas
 
 	#tag Event
 		Sub InsertText(text as string, range as TextRange)
+		  Text = ReplaceLineEndings(Text, EndOfLine)
+		  
 		  If range Is Nil Then
-		    dbglog currentmethodname + "[" + Text + "] nil range"
+		    dbglog currentmethodname + "[" + If(Text=EndOfLine,"<EOL>",Text) + "] nil range"
 		  Else
-		    dbglog currentmethodname + "[" + Text + "] range (location, length, end) = [" + Str(range.Location) + " ," + Str(range.Length) + ", " + Str(range.EndLocation) + "]"
+		    dbglog currentmethodname + "[" + If(Text=EndOfLine,"<EOL>",Text) + "] range (location, length, end) = [" + Str(range.Location) + " ," + Str(range.Length) + ", " + Str(range.EndLocation) + "]"
 		  End If
 		  
 		  mTextBuffer = mTextBuffer + Text
@@ -365,9 +367,12 @@ Inherits TextInputCanvas
 		  // IF the cursor should be visible then draw it - otherwise dont and the clear above will have done the right thing
 		  If mCursorVisible Then
 		    Dim position As REALbasic.Point = PositionToLineAndColumn(mInsertionPosition)
-		    Dim drawPosition As REAlbasic.point = LineColumnToXY(g, position.X,position.Y)
+		    Dim drawPosition As REAlbasic.point = LineColumnToXY(g, position.X, position.Y)
 		    drawAtX = drawPosition.X
 		    drawAtY = drawPosition.Y
+		    
+		    dbglog " draw cursor @ insertion pos = " + Str(mInsertionPosition) + " x,y = " + str(drawAtX) +"," + str(drawAtY)
+		    
 		    g.DrawLine drawAtX, drawAtY - g.TextAscent, drawAtX, drawAtY - g.TextAscent + g.TextHeight
 		  End If
 		  
@@ -526,19 +531,22 @@ Inherits TextInputCanvas
 		  // since we split things into lines in PAINT and again here
 		  // if we really need lines we should figure out how to do this as few times as possible
 		  
+		  // if line , col exceeds the n entire text buffer then the position should be the end of the buffer
+		  
 		  Dim lines() As String = Split( ReplaceLineEndings(mTextBuffer, EndOfLine), EndOfLine )
 		  
 		  Dim tmpPosition As Integer
 		  
 		  // count up the lengths of whole lines
-		  For i As Integer = 0 To line - 1
+		  For i As Integer = 0 To min(line - 1, lines.Ubound)
 		    tmpPosition = tmpPosition + lines(i).Len
 		  Next
 		  
 		  // plus hte last line we add in just the columns since it may not be the wbole line
 		  tmpPosition = tmpPosition + column
 		  
-		  Return tmpPosition
+		  Return Min(tmpPosition, mTextBuffer.Len)
+		  
 		  
 		End Function
 	#tag EndMethod
@@ -607,6 +615,13 @@ Inherits TextInputCanvas
 		  // if we really need lines we should figure out how to do this as few times as possible
 		  
 		  Dim lines() As String = Split( ReplaceLineEndings(mTextBuffer, EndOfLine), EndOfLine )
+		  
+		  // no lines then ANY click inside our bounds is line 0 column 0 
+		  If lines.ubound < 0 Then
+		    lineNumber = 0
+		    column = 0
+		    Return
+		  End If
 		  
 		  Dim lineTopY As Double
 		  
