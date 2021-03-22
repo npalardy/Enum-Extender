@@ -946,9 +946,18 @@ Inherits TextInputCanvas
 
 	#tag ViewBehavior
 		#tag ViewProperty
+			Name="Tooltip"
+			Visible=true
+			Group="Appearance"
+			InitialValue=""
+			Type="String"
+			EditorType="MultiLineEditor"
+		#tag EndViewProperty
+		#tag ViewProperty
 			Name="Name"
 			Visible=true
 			Group="ID"
+			InitialValue=""
 			Type="String"
 			EditorType="String"
 		#tag EndViewProperty
@@ -956,6 +965,7 @@ Inherits TextInputCanvas
 			Name="Index"
 			Visible=true
 			Group="ID"
+			InitialValue=""
 			Type="Integer"
 			EditorType="Integer"
 		#tag EndViewProperty
@@ -963,6 +973,7 @@ Inherits TextInputCanvas
 			Name="Super"
 			Visible=true
 			Group="ID"
+			InitialValue=""
 			Type="String"
 			EditorType="String"
 		#tag EndViewProperty
@@ -970,6 +981,7 @@ Inherits TextInputCanvas
 			Name="Left"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Integer"
 			EditorType="Integer"
 		#tag EndViewProperty
@@ -977,6 +989,7 @@ Inherits TextInputCanvas
 			Name="Top"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Integer"
 			EditorType="Integer"
 		#tag EndViewProperty
@@ -1000,6 +1013,7 @@ Inherits TextInputCanvas
 			Name="LockLeft"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Boolean"
 			EditorType="Boolean"
 		#tag EndViewProperty
@@ -1007,6 +1021,7 @@ Inherits TextInputCanvas
 			Name="LockTop"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Boolean"
 			EditorType="Boolean"
 		#tag EndViewProperty
@@ -1014,6 +1029,7 @@ Inherits TextInputCanvas
 			Name="LockRight"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Boolean"
 			EditorType="Boolean"
 		#tag EndViewProperty
@@ -1021,11 +1037,13 @@ Inherits TextInputCanvas
 			Name="LockBottom"
 			Visible=true
 			Group="Position"
+			InitialValue=""
 			Type="Boolean"
 			EditorType="Boolean"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="TabPanelIndex"
+			Visible=false
 			Group="Position"
 			InitialValue="0"
 			Type="Integer"
@@ -1049,8 +1067,11 @@ Inherits TextInputCanvas
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="InitialParent"
+			Visible=false
 			Group="Position"
+			InitialValue=""
 			Type="String"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Visible"
@@ -1059,13 +1080,6 @@ Inherits TextInputCanvas
 			InitialValue="True"
 			Type="Boolean"
 			EditorType="Boolean"
-		#tag EndViewProperty
-		#tag ViewProperty
-			Name="HelpTag"
-			Visible=true
-			Group="Appearance"
-			Type="String"
-			EditorType="MultiLineEditor"
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="AutoDeactivate"
@@ -1097,6 +1111,7 @@ Inherits TextInputCanvas
 			Group="Font"
 			InitialValue="0"
 			Type="double"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="TextColor"
@@ -1104,24 +1119,31 @@ Inherits TextInputCanvas
 			Group="Font"
 			InitialValue="&c000000"
 			Type="Color"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Italic"
 			Visible=true
 			Group="Font"
+			InitialValue=""
 			Type="Boolean"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Bold"
 			Visible=true
 			Group="Font"
+			InitialValue=""
 			Type="Boolean"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Underline"
 			Visible=true
 			Group="Font"
+			InitialValue=""
 			Type="boolean"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="TextUnit"
@@ -1129,12 +1151,15 @@ Inherits TextInputCanvas
 			Group="Font"
 			InitialValue="0"
 			Type="Integer"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="ReadOnly"
 			Visible=true
 			Group="Behavior"
+			InitialValue=""
 			Type="boolean"
+			EditorType=""
 		#tag EndViewProperty
 	#tag EndViewBehavior
 End Class

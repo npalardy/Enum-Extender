@@ -1,31 +1,30 @@
 #tag Window
-Begin Window HelpWindow
-   BackColor       =   &cFFFFFF00
+Begin Window winPragmaWriter
    Backdrop        =   0
-   CloseButton     =   True
+   BackgroundColor =   &cFFFFFF00
    Composite       =   False
-   Frame           =   8
+   DefaultLocation =   0
    FullScreen      =   False
-   FullScreenButton=   False
    HasBackColor    =   False
-   Height          =   258
-   ImplicitInstance=   False
-   LiveResize      =   "True"
+   HasCloseButton  =   True
+   HasFullScreenButton=   False
+   HasMaximizeButton=   True
+   HasMinimizeButton=   True
+   Height          =   680
+   ImplicitInstance=   True
    MacProcID       =   0
-   MaxHeight       =   32000
-   MaximizeButton  =   True
-   MaxWidth        =   32000
+   MaximumHeight   =   32000
+   MaximumWidth    =   32000
    MenuBar         =   0
    MenuBarVisible  =   True
-   MinHeight       =   64
-   MinimizeButton  =   True
-   MinWidth        =   64
-   Placement       =   0
+   MinimumHeight   =   64
+   MinimumWidth    =   64
    Resizeable      =   True
    Title           =   "Untitled"
+   Type            =   0
    Visible         =   True
-   Width           =   490
-   Begin TextArea TextArea1
+   Width           =   600
+   Begin TextArea txtSource
       AcceptTabs      =   False
       Alignment       =   0
       AutoDeactivate  =   True
@@ -37,57 +36,57 @@ Begin Window HelpWindow
       DataSource      =   ""
       Enabled         =   True
       Format          =   ""
-      Height          =   214
+      Height          =   325
       HelpTag         =   ""
       HideSelection   =   True
       Index           =   -2147483648
       Italic          =   False
-      Left            =   0
+      Left            =   20
       LimitText       =   0
       LineHeight      =   0.0
       LineSpacing     =   1.0
-      LockBottom      =   True
+      LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
-      LockRight       =   True
+      LockRight       =   False
       LockTop         =   True
       Mask            =   ""
       Multiline       =   True
-      ReadOnly        =   True
+      ReadOnly        =   False
       Scope           =   2
       ScrollbarHorizontal=   False
       ScrollbarVertical=   True
-      Styled          =   True
+      Styled          =   False
       TabIndex        =   0
       TabPanelIndex   =   0
       TabStop         =   True
-      Text            =   "#kHelpText"
+      Text            =   ""
       TextColor       =   &c00000000
-      TextFont        =   "System"
+      TextFont        =   "Menlo"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   0
+      Top             =   20
       Transparent     =   False
       Underline       =   False
-      UnicodeMode     =   0
+      UnicodeMode     =   1
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   490
+      Width           =   560
    End
-   Begin PushButton PushButton1
+   Begin PushButton btnWRitePragmas
       AutoDeactivate  =   True
       Bold            =   False
       ButtonStyle     =   0
       Cancel          =   False
-      Caption         =   "OK"
+      Caption         =   "Write Pragmas"
       Default         =   True
-      Enabled         =   True
+      Enabled         =   False
       Height          =   20
       HelpTag         =   ""
       Index           =   -2147483648
       InitialParent   =   ""
       Italic          =   False
-      Left            =   390
+      Left            =   404
       LockBottom      =   False
       LockedInPosition=   False
       LockLeft        =   True
@@ -100,31 +99,152 @@ Begin Window HelpWindow
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   226
+      Top             =   357
       Transparent     =   False
       Underline       =   False
       Visible         =   True
-      Width           =   80
+      Width           =   176
+   End
+   Begin TextArea txtResult
+      AcceptTabs      =   False
+      Alignment       =   0
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   True
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   271
+      HelpTag         =   ""
+      HideSelection   =   True
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   20
+      LimitText       =   0
+      LineHeight      =   0.0
+      LineSpacing     =   1.0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Mask            =   ""
+      Multiline       =   True
+      ReadOnly        =   True
+      Scope           =   2
+      ScrollbarHorizontal=   False
+      ScrollbarVertical=   True
+      Styled          =   False
+      TabIndex        =   2
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   ""
+      TextColor       =   &c00000000
+      TextFont        =   "Menlo"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   389
+      Transparent     =   False
+      Underline       =   False
+      UnicodeMode     =   1
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   560
    End
 End
 #tag EndWindow
 
 #tag WindowCode
-	#tag Constant, Name = kHelpText, Type = String, Dynamic = False, Default = \"The ToString and FromString methods are handy if you want to put them into a Module\x2C Class or Window where you dont need them exposed to the rest of your application.\n\nThe extends versions can be placed in a Module to extend the type BUT\x2C you may need to alter the data type for them to use a fully qualified path to the Enumeration (something that I can\'t do from this little helper)\n\n\nTop copy & paste the code into an object select ONE method at a time\x2C select the Class/WIndow/Module in the navigator and then paste.\nIf you have anything else selected in the navigator the paste MAY fail.\n\n", Scope = Private
-	#tag EndConstant
-
-
 #tag EndWindowCode
 
-#tag Events PushButton1
+#tag Events txtSource
+	#tag Event
+		Sub TextChange()
+		  btnWritePragmas.Enabled = me.Text <> ""
+		End Sub
+	#tag EndEvent
+#tag EndEvents
+#tag Events btnWRitePragmas
 	#tag Event
 		Sub Action()
-		  Self.close
+		  Dim allSrclines() As String = txtSource.Text.ReplaceLineEndings(EndOfLine).Split(EndOfLine)
+		  
+		  Dim resultLines() As String
+		  
+		  For Each srcline As String In allSrclines
+		    
+		    Dim scopeStr As String
+		    Dim subFuncStr As String
+		    Dim methodNameStr As String
+		    Dim paramStr As String
+		    Dim returnTypeStr As String
+		    
+		    resultLines.append srcline
+		    
+		    If LanguageUtils.CrackMethodDeclaration(srcline, scopeStr, subFuncStr, methodNameStr, paramStr, returnTypeStr) = True Then
+		      
+		      // ok so params is one giant string with ALL params
+		      // we need it split up
+		      
+		      Dim parameters() As LanguageUtils.LocalVariable = LanguageUtils.CrackParams(paramStr)
+		      
+		      For Each param As LanguageUtils.LocalVariable In parameters
+		        resultLines.append "#pragma unused " + param.name
+		      Next
+		      
+		    End If
+		    
+		  Next
+		  
+		  txtResult.Text = Join(resultLines, EndOfLine)
 		  
 		End Sub
 	#tag EndEvent
 #tag EndEvents
 #tag ViewBehavior
+	#tag ViewProperty
+		Name="Name"
+		Visible=true
+		Group="ID"
+		InitialValue=""
+		Type="String"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="Interfaces"
+		Visible=true
+		Group="ID"
+		InitialValue=""
+		Type="String"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="Super"
+		Visible=true
+		Group="ID"
+		InitialValue=""
+		Type="String"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="Width"
+		Visible=true
+		Group="Size"
+		InitialValue="600"
+		Type="Integer"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="Height"
+		Visible=true
+		Group="Size"
+		InitialValue="400"
+		Type="Integer"
+		EditorType=""
+	#tag EndViewProperty
 	#tag ViewProperty
 		Name="MinimumWidth"
 		Visible=true
@@ -179,6 +299,14 @@ End
 		#tag EndEnumValues
 	#tag EndViewProperty
 	#tag ViewProperty
+		Name="Title"
+		Visible=true
+		Group="Frame"
+		InitialValue="Untitled"
+		Type="String"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
 		Name="HasCloseButton"
 		Visible=true
 		Group="Frame"
@@ -208,85 +336,6 @@ End
 		Group="Frame"
 		InitialValue="False"
 		Type="Boolean"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="DefaultLocation"
-		Visible=true
-		Group="Behavior"
-		InitialValue="0"
-		Type="Locations"
-		EditorType="Enum"
-		#tag EnumValues
-			"0 - Default"
-			"1 - Parent Window"
-			"2 - Main Screen"
-			"3 - Parent Window Screen"
-			"4 - Stagger"
-		#tag EndEnumValues
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="HasBackgroundColor"
-		Visible=true
-		Group="Background"
-		InitialValue="False"
-		Type="Boolean"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="BackgroundColor"
-		Visible=true
-		Group="Background"
-		InitialValue="&hFFFFFF"
-		Type="Color"
-		EditorType="Color"
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Name"
-		Visible=true
-		Group="ID"
-		InitialValue=""
-		Type="String"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Interfaces"
-		Visible=true
-		Group="ID"
-		InitialValue=""
-		Type="String"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Super"
-		Visible=true
-		Group="ID"
-		InitialValue=""
-		Type="String"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Width"
-		Visible=true
-		Group="Size"
-		InitialValue="600"
-		Type="Integer"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Height"
-		Visible=true
-		Group="Size"
-		InitialValue="400"
-		Type="Integer"
-		EditorType=""
-	#tag EndViewProperty
-	#tag ViewProperty
-		Name="Title"
-		Visible=true
-		Group="Frame"
-		InitialValue="Untitled"
-		Type="String"
 		EditorType=""
 	#tag EndViewProperty
 	#tag ViewProperty
@@ -330,12 +379,43 @@ End
 		EditorType=""
 	#tag EndViewProperty
 	#tag ViewProperty
+		Name="DefaultLocation"
+		Visible=true
+		Group="Behavior"
+		InitialValue="0"
+		Type="Locations"
+		EditorType="Enum"
+		#tag EnumValues
+			"0 - Default"
+			"1 - Parent Window"
+			"2 - Main Screen"
+			"3 - Parent Window Screen"
+			"4 - Stagger"
+		#tag EndEnumValues
+	#tag EndViewProperty
+	#tag ViewProperty
 		Name="Visible"
 		Visible=true
 		Group="Behavior"
 		InitialValue="True"
 		Type="Boolean"
 		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="HasBackgroundColor"
+		Visible=true
+		Group="Background"
+		InitialValue="False"
+		Type="Boolean"
+		EditorType=""
+	#tag EndViewProperty
+	#tag ViewProperty
+		Name="BackgroundColor"
+		Visible=true
+		Group="Background"
+		InitialValue="&hFFFFFF"
+		Type="Color"
+		EditorType="Color"
 	#tag EndViewProperty
 	#tag ViewProperty
 		Name="Backdrop"
