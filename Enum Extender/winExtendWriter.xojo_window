@@ -8,7 +8,7 @@ Begin Window winExtendWriter
    FullScreen      =   False
    FullScreenButton=   False
    HasBackColor    =   False
-   Height          =   400
+   Height          =   504
    ImplicitInstance=   True
    LiveResize      =   "True"
    MacProcID       =   0
@@ -24,7 +24,7 @@ Begin Window winExtendWriter
    Resizeable      =   True
    Title           =   "Enum Extender"
    Visible         =   True
-   Width           =   600
+   Width           =   790
    Begin Canvas Canvas1
       AcceptFocus     =   False
       AcceptTabs      =   False
@@ -32,7 +32,6 @@ Begin Window winExtendWriter
       Backdrop        =   0
       DoubleBuffer    =   False
       Enabled         =   True
-      EraseBackground =   "True"
       Height          =   16
       HelpTag         =   ""
       Index           =   -2147483648
@@ -47,7 +46,7 @@ Begin Window winExtendWriter
       TabIndex        =   0
       TabPanelIndex   =   0
       TabStop         =   True
-      Top             =   20
+      Top             =   99
       Transparent     =   True
       UseFocusRing    =   True
       Visible         =   True
@@ -65,12 +64,12 @@ Begin Window winExtendWriter
       DataSource      =   ""
       Enabled         =   True
       Format          =   ""
-      Height          =   360
+      Height          =   409
       HelpTag         =   ""
       HideSelection   =   True
       Index           =   -2147483648
       Italic          =   False
-      Left            =   143
+      Left            =   192
       LimitText       =   0
       LineHeight      =   0.0
       LineSpacing     =   1.0
@@ -94,13 +93,13 @@ Begin Window winExtendWriter
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   20
+      Top             =   75
       Transparent     =   False
       Underline       =   False
       UnicodeMode     =   0
       UseFocusRing    =   True
       Visible         =   True
-      Width           =   437
+      Width           =   578
    End
    Begin CheckBox chkExtends
       AutoDeactivate  =   True
@@ -128,7 +127,7 @@ Begin Window winExtendWriter
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   74
+      Top             =   162
       Transparent     =   False
       Underline       =   False
       Value           =   True
@@ -161,7 +160,7 @@ Begin Window winExtendWriter
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   88
+      Top             =   176
       Transparent     =   False
       Underline       =   False
       Value           =   True
@@ -197,7 +196,7 @@ Begin Window winExtendWriter
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   48
+      Top             =   136
       Transparent     =   False
       Underline       =   False
       Visible         =   True
@@ -229,11 +228,159 @@ Begin Window winExtendWriter
       TextFont        =   "System"
       TextSize        =   0.0
       TextUnit        =   0
-      Top             =   371
+      Top             =   475
       Transparent     =   False
       Underline       =   False
       Visible         =   True
       Width           =   36
+   End
+   Begin Label Label2
+      AutoDeactivate  =   True
+      Bold            =   False
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   54
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Multiline       =   True
+      Scope           =   2
+      Selectable      =   False
+      TabIndex        =   6
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "Drag an enumeration from an open Xojo project to this window. When the indicator turns green its time to drop that enum on the window and let it write the code for you."
+      TextAlign       =   0
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   9
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   552
+   End
+   Begin Label lblRecognized
+      AutoDeactivate  =   True
+      Bold            =   False
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   20
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Multiline       =   False
+      Scope           =   2
+      Selectable      =   False
+      TabIndex        =   7
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "Recognized"
+      TextAlign       =   0
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   75
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   160
+   End
+   Begin Label Label3
+      AutoDeactivate  =   True
+      Bold            =   False
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Height          =   20
+      HelpTag         =   ""
+      Index           =   -2147483648
+      InitialParent   =   ""
+      Italic          =   False
+      Left            =   20
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Multiline       =   False
+      Scope           =   2
+      Selectable      =   False
+      TabIndex        =   8
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   "Namespace Prefix"
+      TextAlign       =   0
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   232
+      Transparent     =   False
+      Underline       =   False
+      Visible         =   True
+      Width           =   160
+   End
+   Begin TextField txtNameSpacePrefix
+      AcceptTabs      =   False
+      Alignment       =   0
+      AutoDeactivate  =   True
+      AutomaticallyCheckSpelling=   False
+      BackColor       =   &cFFFFFF00
+      Bold            =   False
+      Border          =   True
+      CueText         =   ""
+      DataField       =   ""
+      DataSource      =   ""
+      Enabled         =   True
+      Format          =   ""
+      Height          =   22
+      HelpTag         =   ""
+      Index           =   -2147483648
+      Italic          =   False
+      Left            =   20
+      LimitText       =   0
+      LockBottom      =   False
+      LockedInPosition=   False
+      LockLeft        =   True
+      LockRight       =   False
+      LockTop         =   True
+      Mask            =   ""
+      Password        =   False
+      ReadOnly        =   False
+      Scope           =   2
+      TabIndex        =   9
+      TabPanelIndex   =   0
+      TabStop         =   True
+      Text            =   ""
+      TextColor       =   &c00000000
+      TextFont        =   "System"
+      TextSize        =   0.0
+      TextUnit        =   0
+      Top             =   264
+      Transparent     =   False
+      Underline       =   False
+      UseFocusRing    =   True
+      Visible         =   True
+      Width           =   160
    End
 End
 #tag EndWindow
@@ -329,7 +476,7 @@ End
 		    
 		    If key = "Data" Then
 		      
-		      Dim thisEnum As New EnumItem( value )
+		      Dim thisEnum As New EnumItem( value, trim(txtNameSpacePrefix.Text) )
 		      
 		      If chkExtends.Value Then
 		        TextArea1.AppendText thisEnum.AsExtensions + EndOfLine
@@ -447,8 +594,13 @@ End
 		  g.ClearRect 0,0,g.width,g.height
 		  
 		  If mShouldFill Then
+		    
+		    lblRecognized.Text = "Recognized"
+		    
 		    g.forecolor = mFillDropRectColor
 		    g.FillRect 0,0,g.width,g.height
+		  Else
+		    lblRecognized.Text = "Unknown"
 		  End If
 		  
 		  g.forecolor = &cffffff

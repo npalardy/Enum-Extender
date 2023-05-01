@@ -73,7 +73,7 @@ Begin Window winPragmaWriter
       Visible         =   True
       Width           =   560
    End
-   Begin PushButton btnWRitePragmas
+   Begin PushButton btnWritePragmas
       AutoDeactivate  =   True
       Bold            =   False
       ButtonStyle     =   0
@@ -167,7 +167,7 @@ End
 		End Sub
 	#tag EndEvent
 #tag EndEvents
-#tag Events btnWRitePragmas
+#tag Events btnWritePragmas
 	#tag Event
 		Sub Action()
 		  Dim allSrclines() As String = txtSource.Text.ReplaceLineEndings(EndOfLine).Split(EndOfLine)

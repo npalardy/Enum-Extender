@@ -2,15 +2,6 @@
 Protected Class App
 Inherits Application
 	#tag MenuHandler
-		Function ViewCodeEditor() As Boolean Handles ViewCodeEditor.Action
-			winCodeEditor.show
-			
-			Return True
-			
-		End Function
-	#tag EndMenuHandler
-
-	#tag MenuHandler
 		Function ViewEnumEditor() As Boolean Handles ViewEnumEditor.Action
 			winEnumEditor.Show
 			

@@ -128,14 +128,6 @@ Begin Menu MainMenuBar
          AutoEnable = True
          Visible = True
       End
-      Begin MenuItem ViewCodeEditor
-         SpecialMenu = 0
-         Index = -2147483648
-         Text = "Code Editor"
-         AutoEnabled = True
-         AutoEnable = True
-         Visible = True
-      End
       Begin MenuItem ViewGenericItemCreator
          SpecialMenu = 0
          Index = -2147483648

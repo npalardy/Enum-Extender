@@ -18,7 +18,7 @@ Protected Class EnumItem
 		  
 		  Dim lines() As String
 		  
-		  lines.append "Public Function ToString(extends enumValue as " + Name + ") as String"
+		  lines.append "Public Function ToString(extends enumValue as " + NameWithPrefix + ") as String"
 		  
 		  lines.append "  select case enumValue"
 		  
@@ -37,7 +37,7 @@ Protected Class EnumItem
 		  lines.append EndOfLine
 		  
 		  
-		  lines.append "Public Function To" + Name + "(extends stringValue as String) as " + Name 
+		  lines.append "Public Function To" + Name + "(extends stringValue as String) as " + NameWithPrefix 
 		  
 		  lines.append "  select case stringValue"
 		  
@@ -78,7 +78,7 @@ Protected Class EnumItem
 		  
 		  Dim lines() As String
 		  
-		  lines.append "Public Function " + Name +"_ToString( enumValue as " + Name + ") as String"
+		  lines.append "Public Function " + Name +"_ToString( enumValue as " + NameWithPrefix + ") as String"
 		  
 		  lines.append "  select case enumValue"
 		  
@@ -97,7 +97,7 @@ Protected Class EnumItem
 		  lines.append EndOfLine
 		  
 		  
-		  lines.append "Public Function " + Name + "_FromString(stringValue as String) as " + Name 
+		  lines.append "Public Function " + Name + "_FromString(stringValue as String) as " + NameWithPrefix 
 		  
 		  lines.append "  select case stringValue"
 		  
@@ -121,7 +121,8 @@ Protected Class EnumItem
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
-		Sub Constructor(hexEncodedData as string)
+		Sub Constructor(hexEncodedData as string, namespacePrefix as string = "")
+		  Me.prefix = namespacePrefix
 		  
 		  Dim decoded As MemoryBlock = DecodeHex(hexEncodedData)
 		  decoded.LittleEndian = False
@@ -223,6 +224,13 @@ Protected Class EnumItem
 		  
 		  
 		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function NameWithPrefix() As string
+		  
+		  return if( trim(prefix) <> "", prefix + "." + name, name)
+		End Function
 	#tag EndMethod
 
 	#tag Method, Flags = &h0
@@ -344,6 +352,10 @@ Protected Class EnumItem
 	#tag EndProperty
 
 	#tag Property, Flags = &h0
+		prefix As string
+	#tag EndProperty
+
+	#tag Property, Flags = &h0
 		srcLines() As String
 	#tag EndProperty
 
@@ -353,7 +365,9 @@ Protected Class EnumItem
 			Name="Name"
 			Visible=true
 			Group="ID"
+			InitialValue=""
 			Type="String"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Index"
@@ -361,12 +375,15 @@ Protected Class EnumItem
 			Group="ID"
 			InitialValue="-2147483648"
 			Type="Integer"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Super"
 			Visible=true
 			Group="ID"
+			InitialValue=""
 			Type="String"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Left"
@@ -374,6 +391,7 @@ Protected Class EnumItem
 			Group="Position"
 			InitialValue="0"
 			Type="Integer"
+			EditorType=""
 		#tag EndViewProperty
 		#tag ViewProperty
 			Name="Top"
@@ -381,6 +399,7 @@ Protected Class EnumItem
 			Group="Position"
 			InitialValue="0"
 			Type="Integer"
+			EditorType=""
 		#tag EndViewProperty
 	#tag EndViewBehavior
 End Class

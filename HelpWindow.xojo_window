@@ -110,7 +110,7 @@ End
 #tag EndWindow
 
 #tag WindowCode
-	#tag Constant, Name = kHelpText, Type = String, Dynamic = False, Default = \"The ToString and FromString methods are handy if you want to put them into a Module\x2C Class or Window where you dont need them exposed to the rest of your application.\n\nThe extends versions can be placed in a Module to extend the type BUT\x2C you may need to alter the data type for them to use a fully qualified path to the Enumeration (something that I can\'t do from this little helper)\n\n\nTop copy & paste the code into an object select ONE method at a time\x2C select the Class/WIndow/Module in the navigator and then paste.\nIf you have anything else selected in the navigator the paste MAY fail.\n\n", Scope = Private
+	#tag Constant, Name = kHelpText, Type = String, Dynamic = False, Default = \"The ToString and FromString methods are handy if you want to put them into a Module\x2C Class or Window where you dont need them exposed to the rest of your application.\n\nThe extends versions can be placed in a Module to extend the type BUT\x2C you may need to alter the data type for them to use a fully qualified path to the Enumeration (something that I can\'t do from this little helper)\n\nTo copy & paste the code into an object select ONE method at a time\x2C select the Class/WIndow/Module in the navigator and then paste.\nIf you have anything else selected in the navigator the paste MAY fail.\n\n", Scope = Private
 	#tag EndConstant
 
 
