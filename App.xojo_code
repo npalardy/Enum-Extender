@@ -35,6 +35,15 @@ Inherits Application
 		End Function
 	#tag EndMenuHandler
 
+	#tag MenuHandler
+		Function ViewPropertyPaster() As Boolean Handles ViewPropertyPaster.Action
+			winPropertyPaster.Show
+			
+			Return True
+			
+		End Function
+	#tag EndMenuHandler
+
 
 	#tag Constant, Name = kEditClear, Type = String, Dynamic = False, Default = \"&Delete", Scope = Public
 		#Tag Instance, Platform = Windows, Language = Default, Definition  = \"&Delete"

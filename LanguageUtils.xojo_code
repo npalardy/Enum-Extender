@@ -1,6 +1,13 @@
 #tag Module
 Protected Module LanguageUtils
-	#tag CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
+		Protected Function ArrayKeywords() As String()
+		  
+		  Return Array("append", "remove", "indexof", "insert", "shuffle", "sort", "sortwith" )
+		  
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h21
 		Private Sub assert(test as boolean, msg as string)
 		  If test = False Then
@@ -10,12 +17,12 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function BlockCloser(openingSrc As String) As String
 		  // Find the source that closes the given opening.
 		  
 		  Dim aboveWord As String
-		  dim tokens() as string = TokenizeLine(openingSrc, false)
+		  dim tokens() as string = TokenizeLine(openingSrc, LanguageUtils.NoWhiteSpaceFlag)
 		  If tokens.ubound < 0 Then
 		    Return ""
 		  End If
@@ -63,7 +70,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function BlockPairMatches(aboveSrc As String, belowSrc As String) As Boolean
 		  // Return whether the two source lines form a block pair,
 		  // e.g. If/Else, If/End If, Else/End if, For/Next, etc.
@@ -125,7 +132,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function CommentStartPos(source As String) As Integer
 		  // Return the byte offset of the start of the comment token for
 		  // the given source line, or 0 if there is no comment.
@@ -152,8 +159,31 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h21, CompatibilityFlags = (TargetConsole and (Target64Bit)) or  (TargetWeb and (Target32Bit or Target64Bit)) or  (TargetDesktop and (Target32Bit or Target64Bit)) or  (TargetIOS and (Target64Bit))
+		Private Function Contains(s As String, what As String) As Boolean
+		  #Pragma BackgroundTasks False
+		  #Pragma BoundsChecking False
+		  #Pragma NilObjectChecking False
+		  
+		  // Return true if 's' contains the substring 'what'.
+		  // By "contains" we mean case-insensitive, encoding-savvy containment
+		  // as with InStr.
+		  
+		  If what = "" Then 
+		    Return True
+		  End If
+		  
+		  return InStr( s, what ) > 0
+		  
+		End Function
+	#tag EndMethod
+
 	#tag Method, Flags = &h1
-		Protected Function CrackClassDecl(content as string, byref scope as string, byref className as string) As boolean
+		Protected Function CrackClassDeclaration(content as string, byref attrs as string, byref scope as string, byref className as string) As boolean
+		  #Pragma unused content
+		  #Pragma unused scope
+		  #pragma unused className
+		  
 		  #If debugBuild
 		    Const debugThis = False
 		  #Else
@@ -166,7 +196,7 @@ Protected Module LanguageUtils
 		  '              classbody
 		  '          END CLASS ENDL
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  // empty string ?
 		  If tokens.ubound < 0 Then 
@@ -175,6 +205,9 @@ Protected Module LanguageUtils
 		    #EndIf
 		    Return parseFailure
 		  End If
+		  
+		  // attrs
+		  // scope
 		  
 		  If tokens(0) <> kCLASS Then
 		    #If debugThis
@@ -275,7 +308,7 @@ Protected Module LanguageUtils
 		  //     GLOBAL 
 		  //   | namedObjectType 
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  // empty string ?
 		  If tokens.ubound < 0 Then 
@@ -448,13 +481,508 @@ Protected Module LanguageUtils
 	#tag EndMethod
 
 	#tag Method, Flags = &h1
-		Protected Function CrackMethodDeclaration(content as string, byref scope as string, byref subFunc as string, byref methodName as string, byref params as string, byref returntype as string) As Boolean
+		Protected Function CrackEnumDeclaration(content as string, byref attrs as string, byref scope as string, byref enumName as string, byref type as string) As Boolean
+		  #If debugBuild
+		    Const debugThis = False
+		  #Else
+		    Const debugthis = False
+		  #EndIf
+		  
+		  // note there are cases we are not handling in this simple grammar
+		  // ie consts defined INSDE a method can use an expression to initialize them
+		  //    outside they cant
+		  // in a class module etc they can have a scope qualifier
+		  // outside they cant it really makes not sense outside the confines of a module class etc
+		  
+		  // enum foo as uint8
+		  //     val1 = 1
+		  // end enum
+		  //
+		  // enum foo as uint8
+		  //     val1
+		  // end enum
+		  // enum foo 
+		  //     val1 = 1
+		  // end enum
+		  // enum foo 
+		  //     val1
+		  // end enum
+		  
+		  // attrs scope enum .........
+		  
+		  // Enum: 
+		  //       TK_ENUM IDENTIFIER enumTypeOpt ENDL
+		  //       enumValueList
+		  //       TK_END TK_ENUM ENDL
+		  // ;
+		  // enumValueList:
+		  //            /* empty String */                
+		  //       |    enumValue                        
+		  //       |    enumValueList enumValue          
+		  // ;
+		  // 
+		  // enumValue:
+		  //            IDENTIFIER enumValueOpt ENDL
+		  // ;
+		  // 
+		  // enumValueOpt:
+		  //           /* empty String */                
+		  //       |   '=' constval                    
+		  //       |   ASSIGN constval                 
+		  // ;
+		  // 
+		  // enumTypeOpt:
+		  //           /* empty String */                
+		  //       |   TK_AS typeSpecifier               
+		  // ;
+		  // 
+		  
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, LanguageUtils.NoWhiteSpaceFlag)
+		  
+		  // empty string ?
+		  If tokens.ubound < 0 Then 
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  
+		  // attributes ?
+		  If tokens(0) = "ATTRIBUTES" Then
+		    // should be ( key [= quoted value,]+.... )
+		    tokens.remove 0
+		    // empty string ?
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    If tokens(0) <> "(" Then
+		      Return parseFailure
+		    End If
+		    tokens.remove 0
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    While tokens(0) <> ")"
+		      attrs = attrs + tokens(0)
+		      tokens.remove 0
+		      If tokens.ubound < 0 Then 
+		        #If debugThis
+		          Break
+		        #EndIf
+		        Return parseFailure
+		      End If
+		    Wend
+		    tokens.remove 0
+		  End If
+		  
+		  // default scope set up
+		  scope = kScopePublic
+		  If tokens(0) = kScopeGlobal _
+		    Or tokens(0) = kScopeProtected _
+		    Or tokens(0) = kScopePrivate _
+		    Or tokens(0) = kScopePublic Then
+		    scope = tokens(0) // got a valid scope 
+		    tokens.remove 0
+		  End If
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  If tokens(0) <> kEnum Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  Else
+		    tokens.remove 0
+		  End If
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  // the enum name 
+		  If IsIdentifier( tokens(0) ) = False Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure // the name is not an ident ?????
+		  End If
+		  type = "Integer"
+		  enumName = tokens(0)
+		  tokens.remove 0
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseSuccess // got maybe "enum name" but nothing else ?????????
+		  End If
+		  
+		  If tokens(0) = "as" Then
+		    tokens.remove 0
+		    
+		    // out of tokens ?
+		    If tokens.Ubound < 0 Then
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure // got maybe "enum name as " but nothing else ?????????
+		    End If
+		    
+		    type = ""
+		    
+		    // the type name now .. accept dotted names ?????
+		    // this basically needs to be ident
+		    // or  ident . ident . ident
+		    Dim expectIdent As Boolean = True
+		    While tokens.ubound >= 0 And tokens(0) <> "="
+		      
+		      Dim keepThisPiece As Boolean 
+		      
+		      If expectIdent Then
+		        If (IsIdentifier(tokens(0)) Or IsBaseType(tokens(0))) Then
+		          keepThisPiece = True
+		        End If
+		      Else
+		        If tokens(0) = "." Then
+		          keepThisPiece = True
+		        End If
+		      End If
+		      
+		      If keepThisPiece = False Then
+		        #If debugThis
+		          Break
+		        #EndIf
+		        Return parseFailure // type name is not ident or ident.ident.ident
+		      End If
+		      
+		      type = type + tokens(0)
+		      tokens.remove 0
+		      
+		      expectIdent = Not expectIdent
+		    Wend
+		    
+		  End If
+		  
+		  // out of tokens ? 
+		  // we either got "enum foo as type"
+		  //            or "enum foo "
+		  If tokens.Ubound > -1 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  Return parseSuccess // YAY !!!!!!!!!
+		  
+		  
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function CrackEventDeclaration(content as string, byref attrs as string, byref scope as string, byref subFunc as string, byref methodName as string, byref params as string, byref returntype as string) As Boolean
 		  #If debugBuild
 		    Const debugThis = false
 		  #Else
 		    Const debugthis = False
 		  #EndIf
-		  // // ^(PRIVATE|PUBLIC|FRIEND|GLOBAL)?\s*(STATIC)?\s*(SUB|FUNCTION)\s([^(]*)\((.*)\)\s*(as\s*(.*))?
+		  // EVENT\s([^(]*)\((.*)\)\s*(as\s*(.*))?
+		  // 
+		  // IDENTICAL to a SUB FUNC just that we have only EVENT
+		  
+		  // strip content to make sure we basically got ONE line
+		  Dim lines() As String = Split(ReplaceLineEndings(Trim(content), EndOfLine), EndOfLine)
+		  
+		  If lines.ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(lines(0), LanguageUtils.NoWhiteSpaceFlag)
+		  
+		  scope = kScopePrivate
+		  
+		  // empty string ?
+		  If tokens.ubound < 0 Then 
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  // attributes ?
+		  If tokens(0) = "ATTRIBUTES" Then
+		    // should be ( key [= quoted value,]+.... )
+		    tokens.remove 0
+		    // empty string ?
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    If tokens(0) <> "(" Then
+		      Return parseFailure
+		    End If
+		    tokens.remove 0
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    While tokens(0) <> ")"
+		      attrs = attrs + tokens(0)
+		      tokens.remove 0
+		      If tokens.ubound < 0 Then 
+		        #If debugThis
+		          Break
+		        #EndIf
+		        Return parseFailure
+		      End If
+		    Wend
+		    tokens.remove 0
+		  End If
+		  
+		  // EVENT
+		  If tokens(0) <> "EVENT" Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  subFunc = tokens(0)
+		  tokens.remove 0
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure
+		  End If
+		  
+		  If IsIdentifier( tokens(0) ) = False Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure // the name is not an ident ?????
+		  End If
+		  methodName = tokens(0)
+		  tokens.remove 0
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure // got maybe "scope name" but nothing else ?????????
+		  End If
+		  
+		  If tokens(0) <> "(" Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure 
+		  End If
+		  tokens.remove 0
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure // got maybe "scope name ( " but nothing else ?????????
+		  End If
+		  
+		  // params
+		  // params:
+		  // /* empty String */
+		  // |    param
+		  // |    params , param
+		  
+		  // param :
+		  //   ident as type
+		  // | ident( arrayspecList ) as type
+		  
+		  // arrayspecList :            // allows for () or (,) or (,,,) etc
+		  //   /* empty String */
+		  //   arrayspeclist , arrayspec
+		  
+		  // arrayspec
+		  //   /* empty String */
+		  
+		  // we SHOULD be able to read any old token until we get to the closing matching paren
+		  // we're not really tryng to validate the code is going to compile
+		  // we just want to make sure that whatever is in ( ) is all picked up as "params"
+		  // and that the ( and ) are "balanced"
+		  Dim parenthesisCount As Integer = 1
+		  While tokens.ubound >= 0 And parenthesisCount > 0
+		    
+		    If tokens(0) = "(" Then
+		      parenthesisCount = parenthesisCount + 1
+		      params = params + tokens(0)
+		    Elseif tokens(0) = ")" Then
+		      parenthesisCount = parenthesisCount - 1
+		      If parenthesisCount > 0 Then
+		        params = params + tokens(0)
+		      end if
+		    Else
+		      
+		      If tokens(0) = "." Then // a . we dont put spaces before
+		      Elseif Right(params,1) = "." Then // and we dont put one after a . either
+		      Else
+		        If params <> "" Then
+		          params = params + " "
+		        End If
+		      End If
+		      
+		      params = params + tokens(0)
+		    End If
+		    tokens.remove 0
+		    
+		  Wend
+		  
+		  // events do NOT clue us in ahead of time whether they retun a value or not
+		  
+		  // IF we're a FUNCTION then we should have "as typename"
+		  // but as a SUB we exit here IF things are OK
+		  If parenthesisCount <> 0 Then 
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure  // failed parse for a SUB - unclosed (
+		  End If
+		  
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseSuccess 
+		  End If
+		  
+		  // we're a func !
+		  // should have an AS type
+		  If tokens(0) <> "as" Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure 
+		  End If
+		  tokens.remove 0
+		  // out of tokens ?
+		  If tokens.Ubound < 0 Then
+		    #If debugThis
+		      Break
+		    #EndIf
+		    Return parseFailure // got maybe "scope name ( ) as .... and no more ?
+		  End If
+		  
+		  // the type name now .. accept dotted names ?????
+		  // this basically needs to be ident, or ident(), or ident(,,,)
+		  // or  ident . ident . ident, or  ident . ident . ident () 
+		  // or  ident . ident . ident(,,,,)
+		  Const kExpectIdent = 1
+		  Const kExpectDot = 2
+		  Const kExpectDotOrBracket = 3
+		  Const kExpectCloseBracket = 4
+		  Dim expect As Integer = kExpectIdent
+		  Dim returnsArrayType As Boolean
+		  
+		  While tokens.ubound >= 0 And tokens(0) <> "="
+		    
+		    Select Case expect
+		      
+		    Case kExpectIdent
+		      If IsIdentifier(tokens(0)) Or IsBaseType(tokens(0)) Or (tokens(0) = "Object") Then
+		        returntype = returntype + tokens(0)
+		        tokens.remove 0
+		      Else
+		        #If debugThis
+		          Break
+		        #EndIf
+		        Return parseFailure // type name is not ident or ident.ident.ident
+		      End If
+		      expect = kExpectDotOrBracket
+		      
+		    Case kExpectDotOrBracket
+		      If tokens(0) = "." Then
+		        returntype = returntype + tokens(0)
+		        tokens.remove 0
+		        expect = kExpectIdent
+		      Elseif tokens(0) = "(" Then
+		        tokens.remove 0
+		        returnsArrayType = True
+		        expect = kExpectCloseBracket
+		      End If
+		      
+		    Case kExpectCloseBracket
+		      If tokens(0) = ")" Then
+		        
+		        tokens.remove 0
+		        Exit While
+		      Else
+		        // eat toekns until we get to the close )
+		        tokens.remove 0
+		        
+		      End If
+		      
+		    End Select
+		    
+		  Wend
+		  If returnsArrayType Then
+		    returntype = returntype + "()"
+		  End If
+		  
+		  // out of tokens ?
+		  // at this point we have a FULL Declaration so we can start saying "yup this is OK"
+		  If tokens.Ubound < 0 Then
+		    Return parseSuccess // YAY !!!!!!!!! got "scope name( params ) as type"
+		  End If
+		  
+		  // theres more ?????????
+		  #If debugThis
+		    Break
+		  #EndIf
+		  Return parseFailure
+		  
+		  
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function CrackMethodDeclaration(content as string, byref attrs as string, byref scope as string, byref subFunc as string, byref methodName as string, byref params as string, byref returntype as string) As Boolean
+		  #If debugBuild
+		    Const debugThis = false
+		  #Else
+		    Const debugthis = False
+		  #EndIf
+		  
+		  // // ^ATTRIBUTES(...)(PRIVATE|PUBLIC|FRIEND|GLOBAL)?\s*(STATIC)?\s*(SUB|FUNCTION)\s([^(]*)\((.*)\)\s*(as\s*(.*))?
 		  // 
 		  // [scope] (STATIC) ????? (SUB | FUNCTION) ident ( paramList ) as returnType
 		  // scope :
@@ -493,7 +1021,7 @@ Protected Module LanguageUtils
 		    Return parseFailure
 		  End If
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(lines(0), False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(lines(0), LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  // empty string ?
 		  If tokens.ubound < 0 Then 
@@ -501,6 +1029,40 @@ Protected Module LanguageUtils
 		      Break
 		    #EndIf
 		    Return parseFailure
+		  End If
+		  
+		  // attributes ?
+		  If tokens(0) = "ATTRIBUTES" Then
+		    // should be ( key [= quoted value,]+.... )
+		    tokens.remove 0
+		    // empty string ?
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    If tokens(0) <> "(" Then
+		      Return parseFailure
+		    End If
+		    tokens.remove 0
+		    If tokens.ubound < 0 Then 
+		      #If debugThis
+		        Break
+		      #EndIf
+		      Return parseFailure
+		    End If
+		    While tokens(0) <> ")"
+		      attrs = attrs + tokens(0)
+		      tokens.remove 0
+		      If tokens.ubound < 0 Then 
+		        #If debugThis
+		          Break
+		        #EndIf
+		        Return parseFailure
+		      End If
+		    Wend
+		    tokens.remove 0
 		  End If
 		  
 		  // default scope set up
@@ -684,7 +1246,7 @@ Protected Module LanguageUtils
 		    Select Case expect
 		      
 		    Case kExpectIdent
-		      If (IsIdentifier(tokens(0)) Or IsBaseType(tokens(0))) Then
+		      If IsIdentifier(tokens(0)) Or IsBaseType(tokens(0)) Or (tokens(0) = "Object") Then
 		        returntype = returntype + tokens(0)
 		        tokens.remove 0
 		      Else
@@ -900,7 +1462,7 @@ Protected Module LanguageUtils
 		  //   | namedObjectType 
 		  
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(content, LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  // empty string ?
 		  If tokens.ubound < 0 Then 
@@ -1104,7 +1666,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function EndsInComment(source As String) As Boolean
 		  // Return whether the given line of source code ends in a comment.
 		  
@@ -1113,7 +1675,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function EndsInLineContinuation(source As String) As Boolean
 		  // Return whether the given line ends in a line-continuation token ("_"),
 		  // possibly followed by a comment.  (If so, then the next line is a
@@ -1125,7 +1687,8 @@ Protected Module LanguageUtils
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
-		Private Sub ErrorIf(errCondition As Boolean)
+		Private Sub ErrorIf(errCondition As Boolean, msg As String = "")
+		  
 		  // Unit testing code calls this function to check if an error has
 		  // occurred.  If so, report it to the user and then break into
 		  // the debugger so he can do something about it.
@@ -1134,16 +1697,18 @@ Protected Module LanguageUtils
 		    Return
 		  End If
 		  
-		  Dim msg As String
-		  msg = "Unit Test Failure :"
-		  #if DebugBuild
+		  If msg = "" Then
+		    msg = "Unit Test Failure :"
+		  End If
+		  
+		  #If DebugBuild
 		    //msg = msg + EndOfLine + EndOfLine _
 		    //+ "Click OK to drop into the debugger and examine the stack."
-		  #endif
+		  #EndIf
 		  MsgBox msg
 		  
 		  
-		  break  // OK, now look at the stack to see what went wrong!
+		  Break  // OK, now look at the stack to see what went wrong!
 		  
 		  
 		End Sub
@@ -1179,7 +1744,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function FindAnyInStr(startPos As Integer, source As String, findSet As String) As Integer
 		  // This is like InStr, except that instead of searching for just a single
 		  // character, we search for any character in a set.
@@ -1200,7 +1765,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function FindOpeningParen(source As String, closePosB As Integer) As Integer
 		  // Find the opening parenthesis that matches the one at closePosB
 		  // in source.  Return its 1-based byte offset, or 0 if not found.
@@ -1229,77 +1794,131 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Sub FindVarDeclarations(sourceLine As String, lineNum As Integer, outVars() As LocalVariable)
+		  Const kIdentExpected = 1
+		  Const kAsExpected = 2
+		  Const kTypeExpected = 4
+		  Const kInValueExpr = 8
+		  Const kCommaExpected = 16
+		  Const kOpenBracketExpected = 32
+		  Const kCloseBracketExpected = 64
+		  
 		  // Find variable declarations in the given line.
 		  // Append them to outVars.
 		  Redim outvars(-1)
 		  
-		  Dim defaultExprs(-1) As String
-		  
-		  Dim tokens() As String = TokenizeLine(sourceLine, False)
+		  Dim tokens() As String = TokenizeLine(sourceLine, LanguageUtils.NoWhiteSpaceFlag)
+		  Dim accumulate_default As Boolean = True
 		  
 		  If tokens.ubound < 0 Then
 		    Return
 		  End If
 		  
-		  dim isConstDecl as boolean
-		  Dim pos As Integer = 0
+		  Dim isConstDecl As Boolean
 		  
-		  If tokens(pos) = "Public" Or tokens(pos) = "Protected" Or tokens(pos) = "Private" Or tokens(pos) = "Function" Or tokens(pos) = "Sub" Then
+		  // attributes ?
+		  // scope ?
+		  // func | sub ?
+		  Dim content, attrs, scope, subFunc, methodName, params, returntype, className As String
+		  
+		  If CrackClassDeclaration(sourceline, attrs, scope, className) = True Then
+		    Return
 		    
-		    // looks like a Sub/Function line; skip to the parameters...
-		    While pos < tokens.ubound And tokens(pos) <> "Function" And tokens(pos) <> "Sub" 
-		      pos = pos + 1
-		    Wend
-		    If pos >= tokens.Ubound Then
-		      Return
-		    End If
-		    While pos < tokens.ubound And tokens(pos) <> "(" 
-		      pos = pos + 1
-		    Wend
-		    pos = pos + 1
-		    If pos >= tokens.Ubound Then
-		      Return
-		    End If
+		  ElseIf CrackMethodDeclaration(sourceline, attrs, scope, subFunc, methodName, params, returntype) = True Then
 		    
-		  Elseif tokens(pos) = "Const" Then
+		    tokens = TokenizeLine(params,  LanguageUtils.NoWhiteSpaceFlag)
+		    
+		  ElseIf CrackEventDeclaration(sourceline, attrs, scope, subFunc, methodName, params, returntype) = True Then
+		    
+		    tokens = TokenizeLine(params,  LanguageUtils.NoWhiteSpaceFlag)
+		    
+		  ElseIf tokens(0) = "Const" Then
 		    // We can just grab the next token as the local variable. 
 		    isConstDecl = True
 		    
-		    pos = pos + 1
+		    tokens.remove 0 
 		    
-		  Elseif tokens(pos) = "Dim" Then
+		  ElseIf tokens(0) = "Dim" Then
 		    
-		    pos = pos + 1
+		    tokens.remove 0 
 		    
-		  Elseif tokens(pos) = "Static" Then
+		  ElseIf tokens(0) = "Static" Then
 		    
-		    pos = pos + 1
+		    tokens.remove 0 
 		    
-		  Elseif tokens(pos) = "Var" Then
+		  ElseIf tokens(0) = "Var" Then
 		    
-		    pos = pos + 1
+		    tokens.remove 0 
+		    
+		  ElseIf tokens(0) = "For" Then
+		    accumulate_default = False
+		    
+		    tokens.remove 0 
+		    
+		    If tokens(0) = "each" Then
+		      tokens.remove 0 
+		    End If
+		    
+		  ElseIf tokens(0) = "Enum" Then
+		    
+		    Return
 		    
 		  Else
+		    // may happen with properties in classes
+		    // which are written just as 
+		    // name as type
 		    
-		    Break
-		    Return
+		    // this could be i,j,k as ..... ident, ident, ident
+		    //               i(), j(), k
+		    //               i(xx,xx), j, k etc
+		    Dim state As Integer = kIdentExpected
+		    For i As Integer = 0 To tokens.ubound
+		      
+		      If (state And kIdentExpected) = kIdentExpected And IsIdentifier( tokens(i) ) Then
+		        state = kCommaExpected + kAsExpected + kOpenBracketExpected
+		        Continue
+		      ElseIf (state And kCommaExpected) = kCommaExpected And tokens(i) = "," Then
+		        state = kIdentExpected
+		        Continue
+		      ElseIf (state And kOpenBracketExpected) = kOpenBracketExpected And tokens(i) = "(" Then
+		        Dim openCount As Integer = 1
+		        i = i + 1
+		        While i <= tokens.ubound And openCount > 0
+		          If tokens(i) = "(" Then
+		            openCount = openCount + 1
+		          ElseIf tokens(i) = ")" Then
+		            openCount = openCount - 1
+		          End If
+		          i = i + 1
+		        Wend
+		        If openCount = 0 Then
+		          i = i - 1
+		          Continue
+		        Else
+		          Break
+		          Return // we got something like i( with no close
+		        End If
+		        
+		      ElseIf (state And kAsExpected) = kAsExpected And tokens(i) = "as" Then
+		        // sure looks like a var decl on this line .. so we go find em
+		        Exit For
+		      Else
+		        Return
+		      End If
+		      
+		    Next i
 		    
 		  End If
 		  
 		  
-		  Const kIdentExpected = 1
-		  Const kAsExpected = 2
-		  Const kTypeExpected = 3
-		  Const kInValueExpr = 4
-		  Const kCommaExpected = 5
 		  Dim mode As Integer = kIdentExpected
 		  Dim openBrackets As Integer
+		  Dim bounds_str As String
 		  
-		  While pos <= tokens.ubound
+		  While tokens.count > 0
 		    
-		    Dim token As String = tokens(pos)
+		    Dim token As String = tokens(0)
 		    
 		    Select Case mode
 		      
@@ -1309,7 +1928,6 @@ Protected Module LanguageUtils
 		        // skip param modifier
 		      Else
 		        outVars.Append New LocalVariable( token, "", lineNum )
-		        defaultExprs.append ""
 		        
 		        mode = kAsExpected
 		      End If
@@ -1321,44 +1939,58 @@ Protected Module LanguageUtils
 		        outVars(UBound(outVars)).isArray = True // (we'll prepend the actual type name below)
 		        openBrackets = openBrackets + 1
 		        
-		      Elseif token = "As" Then
+		      ElseIf token = "As" Then
 		        mode = kTypeExpected
 		        
-		      Elseif token = "New" Then
+		      ElseIf token = "New" Then
 		        // skip "New"; it's just inserted before the type, which we should already expect
+		        outVars(UBound(outVars)).requiresnew = True
 		        
-		      Elseif token = ")" Then
+		      ElseIf token = ")" Then
 		        openBrackets = openBrackets - 1
 		        
 		        If openBrackets = 0 Then
+		          If outVars(UBound(outVars)).isarray = True Then
+		            outVars(UBound(outVars)).bounds = bounds_str
+		          End If
+		          bounds_str = ""
+		          
 		          mode = kAsExpected
+		        Else
+		          bounds_str = bounds_str + token
 		        End If
 		        
-		      Elseif token = "," Then
+		      ElseIf token = "," Then
 		        
 		        If openBrackets = 0 Then
 		          mode = kIdentExpected
+		        Else
+		          bounds_str = bounds_str + token
 		        End If
 		        
-		      Elseif isConstDecl And token = "=" Then
+		      ElseIf isConstDecl And token = "=" Then
 		        
 		        mode = kInValueExpr
-		        
+		      ElseIf openBrackets > 0 Then
+		        bounds_str = bounds_str + token
 		      End If
 		      
 		    Case kTypeExpected
+		      
 		      If token = "New" Then
 		        // skip the NEW whatever
+		        outVars(UBound(outVars)).requiresnew = True
+		        
 		      Else
-		        // ok if the next token is a "." then we should accumylate all the "type as "name.name.name."
+		        // ok if the next token is a "." then we should accumulate all the "type as "name.name.name."
 		        Dim actualType As String
 		        
 		        Do
 		          
-		          actualType = actualType + tokens(pos)
-		          pos = pos + 1 
+		          actualType = actualType + tokens(0)
+		          tokens.remove 0 
 		          
-		        Loop Until pos > tokens.ubound Or (tokens(pos) <> "."  And IsIdentifier(tokens(pos)) = False)
+		        Loop Until tokens.count <= 0 Or (tokens(0) <> "."  And IsIdentifier(tokens(0)) = False)
 		        
 		        For i As Integer = outvars.Ubound DownTo 0
 		          
@@ -1379,7 +2011,7 @@ Protected Module LanguageUtils
 		      
 		      If token = "," Then
 		        mode = kIdentExpected
-		      Elseif token = "=" Then
+		      ElseIf token = "=" Then
 		        mode = kInValueExpr
 		      End If
 		      
@@ -1388,20 +2020,29 @@ Protected Module LanguageUtils
 		      
 		      Do 
 		        
-		        default =  default + tokens(pos)
-		        pos = pos + 1
+		        default =  default + tokens(0)
+		        tokens.remove 0
 		        
-		      Loop Until pos > tokens.ubound Or tokens(pos) = "," Or tokens(pos) = ")"
+		      Loop Until tokens.count <= 0 Or tokens(0) = "," Or tokens(0) = ")"
 		      
-		      defaultExprs(defaultExprs.Ubound) = default
+		      If accumulate_default = True Then
+		        outVars(outVars.Ubound).default_value_str = default
+		      End If
 		      
+		      If tokens.count > 0 Then
+		        If tokens(0) = "," Then
+		          tokens.remove 0
+		        ElseIf tokens(0) = ")" Then
+		          tokens.remove 0
+		        End If
+		      End If
 		      mode = kIdentExpected
 		      
 		      Continue // skip the pos + 1 below
 		      
 		    End Select
 		    
-		    pos = pos + 1
+		    tokens.remove 0
 		  Wend
 		  
 		  If isConstDecl Then
@@ -1412,15 +2053,15 @@ Protected Module LanguageUtils
 		      If outVars(i).type = "" Then
 		        
 		        Select Case True
-		        Case IsInteger(defaultExprs(i)) 
+		        Case IsInteger(outVars(i).default_value_str)
 		          outVars(i).type = "Integer"
-		        Case IsColor(defaultExprs(i))
+		        Case IsColor(outVars(i).default_value_str)
 		          outVars(i).type = "Color"
-		        Case IsBoolean(defaultExprs(i))
+		        Case IsBoolean(outVars(i).default_value_str)
 		          outVars(i).type = "Boolean"
-		        Case IsRealNumber(defaultExprs(i)) 
+		        Case IsRealNumber(outVars(i).default_value_str)
 		          outVars(i).type = "Double"
-		        Case defaultExprs(i).Left(1)="""" And defaultExprs(i).Right(1)="""" 
+		        Case outVars(i).default_value_str.Left(1)="""" And outVars(i).default_value_str.Right(1)="""" 
 		          outVars(i).type = "String"
 		        Else
 		          Break
@@ -1432,19 +2073,25 @@ Protected Module LanguageUtils
 		    
 		  End If
 		  
+		  For i As Integer = outvars.ubound DownTo 0
+		    If Trim(outvars(i).type) = "" Then
+		      outvars.Remove i
+		    End If
+		  Next
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function FirstToken(source As String) As String
 		  // Return the first token of the given source.
 		  
-		  return NextToken( source, 1 )
+		  Dim readtoken As Token = NextToken( source, 1 )
+		  Return readtoken.stringvalue
 		  
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IdentifierFromText(text As String) As String
 		  // Given some text like "Cool Stuff...", make a legal RB
 		  // identifier like "CoolStuff".  In other words, strip out
@@ -1467,12 +2114,22 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsBaseType(token As String) As Boolean
 		  // Return whether the given token is one of our base types.
-		  return token = "String" or token = "Integer" _
-		  or token = "Single" or token = "Double" _
-		  or token = "Boolean" or token = "Color"
+		  Return token = "Auto" Or _
+		  token = "Boolean" Or _
+		  token = "CFStringRef" Or token = "CGFloat" Or token = "Color" Or token = "CString" Or token = "Currency" Or _
+		  token = "Delegate" Or token = "Double" Or _
+		  token = "Int16" Or token = "Int32" Or token = "Int64" Or token = "Int8" Or token = "Integer" Or _
+		  token = "Object" Or token = "OSType" Or _
+		  token = "PString" Or token = "Ptr" Or _
+		  token = "Short" Or token = "Single" Or token = "String" Or _
+		  token = "Text" Or _
+		  token = "UInt16" Or token = "UInt32" Or token = "UInt64" Or token = "UInt8" Or token = "UInteger" Or _
+		  token = "Variant" Or _
+		  token = "WindowPtr" Or token = "WString" 
+		  
 		  
 		End Function
 	#tag EndMethod
@@ -1484,13 +2141,14 @@ Protected Module LanguageUtils
 		    Return True
 		  End If
 		  
+		  Dim attrs As String
 		  Dim scope As String
 		  Dim subFunc As String
 		  Dim codeItemName As String
 		  Dim params As String
 		  Dim returntype As String
 		  
-		  If LanguageUtils.CrackMethodDeclaration(previousLineText, scope, subFunc, codeItemName, params, returntype) Then
+		  If LanguageUtils.CrackMethodDeclaration(previousLineText, attrs, scope, subFunc, codeItemName, params, returntype) Then
 		    blockEnder = BlockCloser(subFunc)
 		    Return True
 		  End If
@@ -1499,7 +2157,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsBoolean(token as String) As Boolean
 		  // Check to see whether the token is a boolean literal
 		  
@@ -1510,7 +2168,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsColor(token as String) As Boolean
 		  // Check to see whether the token is a color literal
 		  
@@ -1526,7 +2184,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsComment(token As String) As Boolean
 		  // Return whether the given token is a comment.
 		  
@@ -1545,7 +2203,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsDigit(c As String) As Boolean
 		  // Return whether the first character of c is a digit (0 - 9).
 		  
@@ -1560,7 +2218,7 @@ Protected Module LanguageUtils
 		Protected Function IsEndOfFunctionLine(line as string) As boolean
 		  // END FUNCTION (rem // or ') nothing else
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(line.Trim, False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(line.Trim, LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  If tokens.Ubound < 1 Then 
 		    Return False
@@ -1597,7 +2255,7 @@ Protected Module LanguageUtils
 		Protected Function IsEndOfSubLine(line as string) As boolean
 		  // END SUB (rem // or ') nothing else
 		  
-		  Dim tokens() As String = LanguageUtils.TokenizeLine(line.Trim, False)
+		  Dim tokens() As String = LanguageUtils.TokenizeLine(line.Trim, LanguageUtils.NoWhiteSpaceFlag)
 		  
 		  If tokens.Ubound < 1 Then 
 		    Return False
@@ -1632,13 +2290,14 @@ Protected Module LanguageUtils
 
 	#tag Method, Flags = &h1
 		Protected Function IsFunctionLine(line as String) As Boolean
+		  Dim attrs As String
 		  Dim scope As String
 		  Dim subFunc As String
 		  Dim codeItemName As String
 		  Dim params As String
 		  Dim returntype As String
 		  
-		  If LanguageUtils.CrackMethodDeclaration(line, scope, subFunc, codeItemName, params, returntype) Then
+		  If LanguageUtils.CrackMethodDeclaration(line, attrs, scope, subFunc, codeItemName, params, returntype) Then
 		    
 		    Return subFunc = "Function"
 		    
@@ -1669,7 +2328,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsIdentifier(token As String) As Boolean
 		  // Return whether the given identifier might be an identifier
 		  // rather than an operator or keyword.
@@ -1698,7 +2357,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsInStringLiteral(source As String, startPosB As Integer, lengthB As Integer) As Boolean
 		  // Return whether the given section of 'source' is within a string literal.
 		  // (Note: the quotation marks themselves are not counted as being within the literal.)
@@ -1743,7 +2402,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsInteger(token as String) As Boolean
 		  // Check to see whether the token is numeric first
 		  If Not IsNumeric( token ) Then 
@@ -1761,7 +2420,14 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
+		Protected Function IsKeyword(word as string) As boolean
+		  Return KeywordDict.HasKey(word)
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
 		Protected Function IsRealNumber(token as String) As Boolean
 		  // First, check to see if the token is numeric
 		  If Not IsNumeric( token ) Then 
@@ -1810,14 +2476,14 @@ Protected Module LanguageUtils
 
 	#tag Method, Flags = &h1
 		Protected Function IsSubLine(line as String) As Boolean
-		  
+		  Dim attrs As String
 		  Dim scope As String
 		  Dim subFunc As String
 		  Dim codeItemName As String
 		  Dim params As String
 		  Dim returntype As String
 		  
-		  If LanguageUtils.CrackMethodDeclaration(line, scope, subFunc, codeItemName, params, returntype) Then
+		  If LanguageUtils.CrackMethodDeclaration(line, attrs, scope, subFunc, codeItemName, params, returntype) Then
 		    
 		    Return subFunc = "SUB"
 		    
@@ -1883,7 +2549,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function IsWhitespace(c As String) As Boolean
 		  // Return whether the first character of c is a whitespace character.
 		  
@@ -1892,7 +2558,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function KeywordDict() As Dictionary
 		  // Return a dictionary containing all the RB keywords as keys
 		  // (and nothing useful as values).
@@ -1923,7 +2589,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function LineContinuationPoint(source As String) As Integer
 		  // Return the position of the line-continuation token ("_").
 		  // If this line doesn't end in continuation, then return 0.
@@ -1976,6 +2642,46 @@ Protected Module LanguageUtils
 		  loop until found
 		  
 		  return posB
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function LineIsBlockEnd(line as string) As boolean
+		  
+		  Dim tokens() As String = TokenizeLine(line, LanguageUtils.NoWhiteSpaceFlag)
+		  
+		  If tokens.ubound < 0 Then
+		    Return False
+		  End If
+		  
+		  Select Case True
+		    
+		  Case tokens.Count >= 1 And tokens(0) = "#endif"
+		  Case tokens.Count >= 1 And tokens(0) = "next"
+		  Case tokens.Count >= 1 And tokens(0) = "loop"
+		  Case tokens.Count >= 1 And tokens(0) = "wend"
+		    
+		  Case tokens.Count >= 1 And tokens(0) = "end"
+		    
+		  Case tokens.Count >= 2 And tokens(0) + " " + tokens(1) = "end if"
+		  Case tokens.Count >= 2 And tokens(0) + " " + tokens(1) = "end select"
+		  Case tokens.Count >= 2 And tokens(0) + " " + tokens(1) = "end try"
+		  Case tokens.Count >= 2 And tokens(0) + " " + tokens(1) = "end sub"
+		  Case tokens.Count >= 2 And tokens(0) + " " + tokens(1) = "end function"
+		    
+		  Else
+		    Return False
+		  End Select
+		  
+		  Return True
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h1
+		Protected Function LineIsBlockStart(line as string) As boolean
+		  Return BlockCloser(line) <> ""
 		  
 		End Function
 	#tag EndMethod
@@ -2043,7 +2749,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function NeedsMatchAbove(sourceLine As String) As Boolean
 		  Dim firstWord As String
 		  firstWord = FirstToken( sourceLine )
@@ -2055,7 +2761,7 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Function NeedsMatchBelow(sourceLine As String) As Boolean
 		  Dim firstWord As String
 		  firstWord = FirstToken( sourceLine )
@@ -2069,30 +2775,29 @@ Protected Module LanguageUtils
 		  
 		  Dim posB As Integer
 		  Dim maxpos As Integer
-		  Dim token As String
 		  
-		  if firstWord = "if" then
+		  If firstWord = "if" Then
 		    // "if" is a bit of a special case, since it has both a single-line
 		    // and a block form.  The difference is whether there is anything
 		    // after the "then".
 		    posB = firstWord.Len
 		    maxpos = sourceLine.Len
-		    while posB <= maxpos
-		      token = NextToken( sourceLine, posB )
-		      posB = posB + token.Len
-		      if token = "then" then
+		    While posB <= maxpos
+		      Dim tk As token = NextToken( sourceLine, posB )
+		      posB = posB + tk.read
+		      If tk.StringValue = "then" Then
 		        // ok, if next token is not a comment or end of line, then
 		        // we have a single-line if and need no match below
-		        do
-		          token = NextToken( sourceLine, posB )
-		          posB = posB + token.Len
-		        loop until token = "" or not IsWhitespace( token )
-		        If token = "" Or Left(token,1) = "'" Or Left(token,2) = "//" Or Left(token,4) = "Rem " Then 
+		        Do
+		          tk = NextToken( sourceLine, posB )
+		          posB = posB + tk.read
+		        loop until tk.read = 0 
+		        If tk.stringvalue = "" Or Left(tk.stringvalue,1) = "'" Or Left(tk.stringvalue,2) = "//" Or Left(tk.stringvalue,4) = "Rem " Then 
 		          Return True
 		        End If
 		        Return False
 		      end if
-		      If token = "" Then 
+		      If tk.read = 0 Then 
 		        Exit
 		      End If
 		    wend
@@ -2104,13 +2809,13 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
-		Protected Function NextToken(source As String, startPosB As Integer) As String
+	#tag Method, Flags = &h1
+		Protected Function NextToken(source As String, startPos As Integer) As token
 		  // Get the next token in the given source code, starting at
 		  // the given char offset (as in Mid, first byte = 1).
 		  
 		  Dim i, j, maxi As Integer
-		  i = startPosB
+		  i = startPos
 		  maxi = Len( source )
 		  
 		  Dim c As String
@@ -2123,101 +2828,213 @@ Protected Module LanguageUtils
 		        Exit
 		      End If
 		    next
-		    Return Mid( source, i, j - i )
+		    Return New token( token.types.whitespace, Mid( source, i, j - i ) )
 		    
-		  elseif c = "'" then
+		  ElseIf c = "'" Then
 		    // comment from here to end of line
-		    Return Mid( source, i )
+		    Return New token( token.types.comment, Mid( source, i ) )
 		    
-		  elseif c = "/" and i < maxi and Mid( source, i+1, 1 ) = "/" then
+		  ElseIf c = "/" And i < maxi And Mid( source, i+1, 1 ) = "/" Then
 		    // comment from here to end of line
-		    Return Mid( source, i )
+		    Return New token( token.types.comment, Mid( source, i ) )
 		    
-		  Elseif c = "R" And Mid( source, i, 3 ) = "Rem" _
+		  ElseIf c = "R" And Mid( source, i, 3 ) = "Rem" _
 		    And IsWhitespace( Mid( source, i+3, 1 ) ) Then
 		    // comment from here to end of line
-		    Return Mid( source, i )
+		    Return New token( token.types.comment, Mid( source, i ) )
 		    
-		  elseif c = """" then
+		  ElseIf c = """" Then
 		    // string literal
 		    j = i
-		    while j > 0 and j < maxi
+		    While j > 0 And j < maxi
 		      j = InStr( j+1, source, """" )
-		      if j = 0 then  // no more quotes found -- terminate at end of string
+		      If j = 0 Then  // no more quotes found -- terminate at end of string
 		        j = maxi
-		        exit
-		      end if
+		        Exit
+		      End If
 		      If Mid( source, j+1, 1 ) = """" Then
 		        j = j + 1   // doubled embedded quote -- skip it and continue
-		      else
-		        exit        // found the close quote; exit the loop
-		      end if
-		    wend
-		    Return Mid( source, i, j - i + 1 )
+		      Else
+		        Exit        // found the close quote; exit the loop
+		      End If
+		    Wend
+		    Return New token( token.types.String, Mid( source, i, j - i + 1 ) )
 		    
-		  elseif IsDigit( c ) or _
+		  ElseIf c = "\" And i < maxi And Mid( source, i+1, 1 ) = """" Then
+		    // string literal escape encoded
+		    // these CAN be multi lined ffs
+		    Dim buffer() As String
+		    j = i + 2
+		    Dim read As Integer = 2
+		    
+		    While j > 0 And j <= maxi
+		      Dim ch As String = Mid( source, j, 1 )
+		      
+		      read = read + 1
+		      
+		      If ch = "\" Then
+		        
+		        If j+1 > maxi Then
+		          Exit While
+		        Else
+		          Select Case Mid(source, j+1, 1)
+		          Case "n"
+		            buffer.append ChrB(&h0A)
+		            read = read + 1
+		            
+		          Case "t"
+		            buffer.append ChrB(&h09)
+		            read = read + 1
+		            
+		          Case "v"
+		            buffer.append ChrB(&h0b)
+		            read = read + 1
+		            
+		          Case "b"
+		            buffer.append ChrB(&h08)
+		            read = read + 1
+		            
+		          Case "f"
+		            buffer.append ChrB(&h0C)
+		            read = read + 1
+		            
+		          Case "a"
+		            buffer.append ChrB(&h07)
+		            read = read + 1
+		            
+		          Case "\"
+		            buffer.append "\"
+		            read = read + 1
+		            
+		          Case "?"
+		            buffer.append "?"
+		            read = read + 1
+		            
+		          Case "'"
+		            buffer.append "'"
+		            read = read + 1
+		            
+		          Case """"
+		            buffer.append """"
+		            read = read + 1
+		            
+		          Case "x" 
+		            // two char Hex
+		            buffer.append ChrB(Val("&h" + Mid(source, j + 2, 2)))
+		            j = j + 1
+		            read = read + 3
+		            
+		          Else
+		            buffer.append " "
+		            
+		          End Select
+		          j = j + 2
+		        End If
+		        
+		      ElseIf ch = """" Then
+		        Exit While
+		      Else
+		        buffer.append ch
+		        j = j + 1
+		        
+		      End If
+		      
+		    Wend
+		    
+		    Return New token( token.types.String, """" + Join(buffer,"") + """", read )
+		    
+		  ElseIf IsDigit( c ) Or _
 		    (c = "." And i < maxi And IsDigit( Mid( source, i+1, 1 ) )) Then
 		    // a number
 		    j = i + 1
-		    while j <= maxi
+		    Dim read As Integer
+		    
+		    While j <= maxi
 		      c = Mid( source, j, 1 )
 		      If c <> "." And Not IsDigit( c ) Then 
 		        Exit
 		      End If
 		      j = j + 1
-		    wend
-		    Return Mid( source, i, j - i )
+		      read = read  + 1
+		      
+		    Wend
+		    Return New token( token.types.number, Mid( source, i, j - i ) )
 		    
-		  Elseif InStr( "+-*/\^=.,():"+EndOfLine, c ) > 0 Then
-		    // an operator or paren -- currently all our operators are one character
-		    return c
+		  ElseIf InStr( "<>+-*/\^=.,():"+EndOfLine, c ) > 0 Then
+		    // an operator or paren 
+		    // currently all our operators are one character 
+		    // uh NO ! <= >= <> ????
+		    Dim nextC As String = Mid(source, i+1, 1) 
+		    If c = "<" And nextC = ">" Then
+		      Return New token( token.types.operator, c + nextC, 2 )
+		    ElseIf c = "<" And nextC = "=" Then
+		      Return New token( token.types.operator, c + nextC, 2 )
+		    ElseIf c = ">" And nextC = "=" Then
+		      Return New token( token.types.operator,c + nextC, 2 )
+		    End If
 		    
-		  else
+		    Return New token( token.types.operator, c )
+		    
+		  Else
 		    // anything else -- grab to next delimiter
-		    j = FindAnyInStr( i+1, source, """+-*/\^='.(), :"+EndOfLine )
+		    j = FindAnyInStr( i+1, source, "<>""+-*/\^='.(), :"+ EndOfLine + WhiteSpaceChars)
 		    If j < 1 Then 
 		      j = maxi+1
 		    End If
-		    return Mid( source, i, j - i )
-		  end if
+		    Return New token( token.types.unknown, Mid( source, i, j - i ) )
+		  End If
 		  
-		  break // should never get here -- all cases above return something
+		  Break // should never get here -- all cases above return something
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
 		Protected Sub RunUnitTests()
-		  // Unit-test this module.
-		  
-		  UnitTestIsIdent
-		  UnitTestIsHexNumber()
-		  UnitTestIsStringLiteral()
-		  
-		  UnitTestBlockCloser
-		  UnitTestCommentStartPos
-		  UnitTestEndsInComment
-		  UnitTestEndsInLineCont
-		  UnitTestFindAnyInStr
-		  UnitTestFindOpeningParen
-		  UnitTestFindVarDecs
-		  // UnitTestFindVarHelper gets tested as part of FindVarDecs
-		  UnitTestFirstToken
-		  UnitTestIsInStringLiteral
-		  UnitTestPropertyDeclCracker
-		  UnitTestMethodDeclCracker
-		  
-		  UnitTestTokenize
-		  // UnitTestTokenHelper gets tested as part of tokenize
-		  
-		  UnitTestIsEndOfCodeBlock
-		  
-		  UnitTestFindParams
-		  
-		  UnitTestConvertComments()
-		  
-		  UnitTestExpect()
-		  
-		  UnitTestMakeSignature
+		  #If DebugBuild
+		    // Unit-test this module.
+		    
+		    UnitTestTokenize
+		    UnitTestTokenizeSource
+		    UnitTestFirstToken
+		    
+		    UnitTestBlockCloser
+		    UnitTestCommentStartPos
+		    UnitTestConvertComments
+		    UnitTestEndsInComment
+		    UnitTestEndsInLineCont
+		    UnitTestEnumDeclCracker
+		    UnitTestEventDeclCracker
+		    UnitTestExpect
+		    UnitTestFindAnyInStr
+		    UnitTestFindOpeningParen
+		    
+		    UnitTestFindParams
+		    
+		    UnitTestFindVarDecs
+		    // UnitTestFindVarHelper gets tested as part of FindVarDecs
+		    UnitTestIsEndOfCodeBlock
+		    UnitTestIsHexNumber()
+		    UnitTestIsIdent
+		    UnitTestIsInStringLiteral
+		    UnitTestMakeSignature
+		    
+		    UnitTestMakeSignatureForEvent
+		    
+		    UnitTestMethodDeclCracker
+		    UnitTestPropertyDeclCracker
+		    
+		    // UnitTestTokenHelper gets tested as part of tokenize
+		    
+		    UnitTestIsEndOfCodeBlock
+		    
+		    UnitTestFindParams
+		    
+		    UnitTestConvertComments()
+		    
+		    UnitTestExpect()
+		    
+		    LocalVariable.RunUnitTests
+		  #EndIf
 		End Sub
 	#tag EndMethod
 
@@ -2368,58 +3185,106 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
-		Protected Function TokenizeLine(sourceLine As String, includeWhitespace As Boolean = true) As String()
+	#tag Method, Flags = &h1
+		Protected Function TokenizeLine(sourceLine As String, includeWhitespace As Integer = AllWhiteSpaceFlag) As String()
 		  // Break the given line up into tokens.
 		  // If includeWhitespace = true, then include whitespace as well,
 		  // so the original line can be completely reconstructed.
 		  // Otherwise, skip over any whitespace tokens.
 		  
 		  Dim out() As String
-		  Dim posB As Integer = 1
+		  Dim pos As Integer = 1
 		  Dim maxpos As Integer = sourceLine.Len
-		  Dim token As String
+		  Dim tk As token
 		  
-		  while posB <= maxpos
-		    token = NextToken( sourceLine, posB )
-		    If token = "" Then 
+		  While pos <= maxpos
+		    
+		    tk = NextToken( sourceLine, pos )
+		    
+		    If tk.read = 0 Then 
 		      Return out
 		    End If
-		    if includeWhitespace or not IsWhitespace(token) then
-		      out.Append token
-		    end if
-		    posB = posB + token.Len
-		  wend
-		  
-		  return out
-		  
-		End Function
-	#tag EndMethod
-
-	#tag Method, Flags = &h1, CompatibilityFlags = TargetHasGUI
-		Protected Function TokenizeSource(source As String, includeWhitespace As Boolean = true) As String()
-		  // Break the source up into multiple lines.  Then tokenize each line
-		  
-		  dim out( -1 ) as String
-		  dim lines( -1 ) as String
-		  
-		  lines = Split( source, EndOfLine )
-		  
-		  dim line, token as String
-		  dim temp( -1 ) as String
-		  for each line in lines
-		    temp = LanguageUtils.TokenizeLine( line, includeWhitespace )
 		    
-		    for each token in temp
-		      out.Append( token )
-		    next token
-		  next line
+		    If includeWhitespace = AllWhiteSpaceFlag Then // keep everything - white space or not
+		      
+		      out.Append tk.stringValue
+		      
+		    ElseIf includeWhitespace = EndOfLineFlag Then
+		      
+		      If Contains(tk.stringValue, EndOfLine) Then // keep the end of lines
+		        out.Append EndOfLine
+		      ElseIf IsWhitespace(tk.stringValue) = False Then // keep no other white space
+		        out.Append tk.stringValue
+		      End If
+		      
+		    ElseIf includeWhitespace = NoWhiteSpaceFlag Then
+		      
+		      If IsWhitespace(tk.stringValue) = False Then // no white space
+		        out.Append tk.stringValue
+		      End If
+		      
+		    End If
+		    
+		    //incorrect in the case there ws a \" encoded stringg as that may consume more bytes than it returns 
+		    // ie/ if it includes \xHEX then there imght be one byte returned but 4 bytes eaten !
+		    pos = pos + tk.read
+		    
+		  Wend
 		  
 		  return out
+		  
 		End Function
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h1
+		Protected Function TokenizeSource(source As String, includeWhitespace As Integer = AllWhiteSpaceFlag) As Token()
+		  // tokenize source is for tokenizing MULTIPLE LINES
+		  
+		  Dim out() As token
+		  Dim pos As Integer = 1
+		  Dim maxpos As Integer = source.Len
+		  Dim tk As token
+		  
+		  While pos <= maxpos
+		    
+		    tk = NextToken( source, pos )
+		    
+		    If tk.read = 0 Then 
+		      Return out
+		    End If
+		    
+		    If includeWhitespace = AllWhiteSpaceFlag Then // keep everything - white space or not
+		      
+		      out.Append tk
+		      
+		    ElseIf includeWhitespace = EndOfLineFlag Then
+		      
+		      If Contains(tk.stringValue, EndOfLine) Then // keep the end of lines
+		        out.Append New token(token.types.EndOfLine, EndOfLine)
+		      ElseIf IsWhitespace(tk.stringValue) = False Then // keep no other white space
+		        out.Append tk
+		      End If
+		      
+		    ElseIf includeWhitespace = NoWhiteSpaceFlag Then
+		      
+		      If IsWhitespace(tk.stringValue) = False Then // no white space
+		        out.Append tk
+		      End If
+		      
+		    End If
+		    
+		    //incorrect in the case there ws a \" encoded stringg as that may consume more bytes than it returns 
+		    // ie/ if it includes \xHEX then there imght be one byte returned but 4 bytes eaten !
+		    pos = pos + tk.read
+		    
+		  Wend
+		  
+		  Return out
+		  
+		End Function
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub UnitTestBlockCloser()
 		  
 		  ErrorIf BlockCloser("if foo=bar then") <> "end if"
@@ -2430,7 +3295,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestCommentStartPos()
 		  ErrorIf CommentStartPos("abc // def") <> 5
 		  ErrorIf CommentStartPos("abc 'def") <> 5
@@ -2475,7 +3340,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestEndsInComment()
 		  
 		  ErrorIf EndsInComment("if x=3 then foo")
@@ -2510,7 +3375,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestEndsInLineCont()
 		  ErrorIf EndsInLineContinuation( "if x=3 then foo" )
 		  ErrorIf EndsInLineContinuation( "x_2 = y_3" )
@@ -2530,6 +3395,26 @@ Protected Module LanguageUtils
 		  // Note that the following is illegal anyway:
 		  //   EndsInLineContinuation( "foo = _ * bar" )
 		  // ...so we really don't care what answer we get.
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTestEnumDeclCracker()
+		  UnitTest_ValidEnumDeclarations
+		  
+		  UnitTest_InvalidEnumDeclarations
+		  
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTestEventDeclCracker()
+		  UnitTest_ValidEventDeclarations
+		  
+		  UnitTest_InvalidEventDeclarations
+		  
+		  
 		End Sub
 	#tag EndMethod
 
@@ -2604,7 +3489,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestFindAnyInStr()
 		  
 		  ErrorIf FindAnyInStr(1, "abcdef", "zdq") <> 4
@@ -2616,7 +3501,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestFindOpeningParen()
 		  
 		  ErrorIf FindOpeningParen("12(456)8", 7) <> 3
@@ -2655,20 +3540,37 @@ Protected Module LanguageUtils
 		    
 		  End If
 		  
+		  If True Then
+		    Dim vars() As LanguageUtils.LocalVariable
+		    vars = CrackParams("other As UIObject, x As Integer = -1, y As Integer = -1, width As Integer = -1, height As Integer = -1)")
+		    ErrorIf vars.Ubound <> 4
+		    
+		    ErrorIf vars(0).type <> "UIObject"
+		    ErrorIf vars(1).type <> "Integer"
+		    ErrorIf vars(2).type <> "Integer"
+		    ErrorIf vars(3).type <> "Integer"
+		    ErrorIf vars(4).type <> "Integer"
+		    
+		    
+		  End If
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestFindVarDecs()
 		  UnitTestFindVarHelper "Dim i,j As Integer", "i:Integer,j:Integer"
 		  UnitTestFindVarHelper "Dim i As Integer, foo As String", "i:Integer,foo:String"
-		  UnitTestFindVarHelper "Dim a(5),b(-1),c() As Color", "a:Color(),b:Color(),c:Color()"
+		  UnitTestFindVarHelper "Dim a(5),b(-1),c() As Color", "a:Color():5,b:Color():-1,c:Color():"
 		  
 		  UnitTestFindVarHelper "Private Sub Foo(bar as Integer, baz as String)", "bar:Integer,baz:String"
-		  UnitTestFindVarHelper "Function Foo(ByRef foo as Date, Assigns bar as Integer)", "foo:Date,bar:Integer"
+		  UnitTestFindVarHelper "Function Foo(ByRef foo as Date, Assigns bar as Integer) as Boolean", "foo:Date,bar:Integer"
+		  UnitTestFindVarHelper "Attributes( asdfasdf ) Function Foo(ByRef foo as Date, Assigns bar as Integer) as string", "foo:Date,bar:Integer"
+		  
+		  UnitTestFindVarHelper "Private Sub Foo(bar() as Integer, baz(100) as String)", "bar:Integer():,baz:String():100"
+		  UnitTestFindVarHelper "Private Sub Foo(bar() as Integer, baz() as String)", "bar:Integer():,baz:String():"
 		  
 		  UnitTestFindVarHelper "Dim d As New Date", "d:Date"
-		  UnitTestFindVarHelper "Dim a(5),b(-1,-1),c() As Color", "a:Color(),b:Color(),c:Color()"
+		  UnitTestFindVarHelper "Dim a(5),b(-1,-1),c() As Color", "a:Color():5,b:Color():-1,-1,c:Color():"
 		  UnitTestFindVarHelper "Dim a As Foo.Bar.Baz", "a:Foo.Bar.Baz"
 		  UnitTestFindVarHelper "Dim a As Foo.Bar.Baz, b as Date", "a:Foo.Bar.Baz,b:Date"
 		  
@@ -2684,10 +3586,14 @@ Protected Module LanguageUtils
 		  UnitTestFindVarHelper "Static d As New Date", "d:Date"
 		  UnitTestFindVarHelper "Var d As New Date", "d:Date"
 		  
+		  UnitTestFindVarHelper "i = i + 1", ""
+		  
+		  UnitTestFindVarHelper "Enum AdressTypes as Uint8", ""
+		  
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestFindVarHelper(sourceLine As String, expected As String)
 		  // Helper method for UnitTestFindVarDecs.
 		  // 'sourceLine' is a line of source code, 'expected' represents the local
@@ -2698,13 +3604,22 @@ Protected Module LanguageUtils
 		  
 		  Dim i As Integer
 		  Dim got As String
-		  for i = 0 to UBound( vars )
+		  
+		  For i = 0 To UBound( vars )
+		    
 		    ErrorIf vars(i).firstLine <> 100
+		    
 		    If i > 0 Then 
 		      got = got + ","
 		    End If
+		    
 		    got = got + vars(i).name + ":" + vars(i).type
-		  next
+		    
+		    If vars(i).isarray Then
+		      got = got + ":" + vars(i).bounds
+		    End If
+		    
+		  Next
 		  
 		  DetailedErrorIf got <> expected, "Vars found: " + got _
 		  + EndOfLine + "Expected: " + expected
@@ -2712,7 +3627,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestFirstToken()
 		  ErrorIf FirstToken("if x then") <> "if"
 		  ErrorIf FirstToken("end if") <> "end"
@@ -2822,7 +3737,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestIsIdent()
 		  
 		  ErrorIf IsIdentifier("ÜberschriftDok") <> True
@@ -2836,7 +3751,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestIsInStringLiteral()
 		  
 		  ErrorIf IsInStringLiteral("foo bar baz", 5, 3)
@@ -2891,6 +3806,76 @@ Protected Module LanguageUtils
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
+		Private Sub UnitTestMakeSignatureForEvent()
+		  #If DebugBuild
+		    
+		    If True Then
+		      Dim content As String
+		      Dim attrs As String
+		      Dim scope As String
+		      Dim subFunc As String
+		      Dim name As String
+		      Dim params As String
+		      Dim returnType As String
+		      
+		      content = "Event name()"
+		      
+		      ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, name, params, returnType) <> True
+		      
+		      Dim result As String = MakeSignatureFromElements(name, params, returnType)
+		      
+		      DetailedErrorIf result = "", " failed to create signature"
+		      DetailedErrorIf result <> "name||", "wrong signature"
+		      
+		    End If
+		    
+		    
+		    If True Then
+		      
+		      Dim content As String
+		      Dim attrs As String
+		      Dim scope As String
+		      Dim subFunc As String
+		      Dim name As String
+		      Dim params As String
+		      Dim returnType As String
+		      
+		      content = "Event foo(i as integer, s as string)"
+		      
+		      ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, name, params, returnType) <> True
+		      
+		      
+		      Dim result As String = MakeSignatureFromElements(name, params, returnType)
+		      
+		      DetailedErrorIf result = "", " failed to create signature"
+		      DetailedErrorIf result <> "foo|integer,string|", "wrong signature"
+		    End If
+		    
+		    If True Then
+		      
+		      Dim content As String
+		      Dim attrs As String
+		      Dim scope As String
+		      Dim subFunc As String
+		      Dim name As String
+		      Dim params As String
+		      Dim returnType As String
+		      
+		      content = "Event foo(i as integer, s as string) as auto"
+		      
+		      ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, name, params, returnType) <> True
+		      
+		      Dim result As String = MakeSignatureFromElements(name, params, returnType)
+		      
+		      DetailedErrorIf result = "", " failed to create signature"
+		      DetailedErrorIf result <> "foo|integer,string|auto", "wrong signature"
+		    End If
+		    
+		  #EndIf
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
 		Private Sub UnitTestMethodDeclCracker()
 		  UnitTest_ValidMethodDeclarations
 		  
@@ -2899,7 +3884,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestPropertyDeclCracker()
 		  UnitTest_ValidPropertyDecls
 		  
@@ -2907,8 +3892,30 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
-		Private Sub UnitTestTokenHelper(source As String, expected As String, includeWhitespace As Boolean = true)
+	#tag Method, Flags = &h21
+		Private Sub UnitTestSourceTokenizerHelper(source As String, expected As String, includeWhitespace As Integer = AllWhiteSpaceFlag)
+		  // This is a helper function for UnitTestTokenize.  The source is just
+		  // plain RB source; "expected" is a string with vertical bars inserted
+		  // between the tokens.
+		  
+		  Dim tokens() As Token
+		  tokens = TokenizeSource( source, includeWhitespace )
+		  
+		  dim tokenstrs() as string
+		  For Each t As token In tokens
+		    tokenstrs.append t.stringvalue
+		  Next t
+		  
+		  Dim got As String = Join(tokenStrs, "|")
+		  
+		  DetailedErrorIf got <> expected, "Expected: " + expected + EndOfLine + "Got: " + got
+		  
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTestTokenHelper(source As String, expected As String, includeWhitespace As Integer = AllWhiteSpaceFlag)
 		  // This is a helper function for UnitTestTokenize.  The source is just
 		  // plain RB source; "expected" is a string with vertical bars inserted
 		  // between the tokens.
@@ -2924,7 +3931,7 @@ Protected Module LanguageUtils
 		End Sub
 	#tag EndMethod
 
-	#tag Method, Flags = &h21, CompatibilityFlags = TargetHasGUI
+	#tag Method, Flags = &h21
 		Private Sub UnitTestTokenize()
 		  UnitTestTokenHelper "if foo=bar then", "if| |foo|=|bar| |then"
 		  
@@ -2934,7 +3941,7 @@ Protected Module LanguageUtils
 		  
 		  UnitTestTokenHelper "Dim i, j,maxi as Integer", "Dim| |i|,| |j|,|maxi| |as| |Integer"
 		  
-		  UnitTestTokenHelper "Dim i, j,maxi as Integer", "Dim|i|,|j|,|maxi|as|Integer", False
+		  UnitTestTokenHelper "Dim i, j,maxi as Integer", "Dim|i|,|j|,|maxi|as|Integer", LanguageUtils.NoWhiteSpaceFlag
 		  
 		  UnitTestTokenHelper "x=UBound(vars)", "x|=|UBound|(|vars|)"
 		  
@@ -2942,20 +3949,124 @@ Protected Module LanguageUtils
 		  
 		  UnitTestTokenHelper "rb3d=Foo42"+EndOfLine, "rb3d|=|Foo42|"+EndOfLine
 		  
+		  UnitTestTokenHelper "rb3d=Foo42"+EndOfLine, "rb3d|=|Foo42", LanguageUtils.NoWhiteSpaceFlag
+		  
+		  UnitTestTokenHelper "rb3d = Foo42 "+EndOfLine, "rb3d|=|Foo42|"+EndOfLine, LanguageUtils.EndOfLineFlag
+		  
 		  // test an oddity of the tokenizer
 		  UnitTestTokenHelper "Picture         =   ""Angebot_Erstellen_Neu.frx"":1D93","Picture|         |=|   |""Angebot_Erstellen_Neu.frx""|:|1|D93"
 		  
 		  UnitTestTokenHelper "ADODB.EventReasonEnum, adStatus As ADODB.EventStatusEnum,","ADODB|.|EventReasonEnum|,| |adStatus| |As| |ADODB|.|EventStatusEnum|,"
+		  
+		  UnitTestTokenHelper " dim i as integer=1^2<>3>=4<=5^6<7>8" ," |dim| |i| |as| |integer|=|1|^|2|<>|3|>=|4|<=|5|^|6|<|7|>|8" 
+		  
+		  // runs of whitespaces coalesced properly ?
+		  UnitTestTokenHelper "Property Width As Integer" + EndOfLine + "Get" + &u09 + EndOfLine + "#If forUseInIDEScript = False", "Property| |Width| |As| |Integer|" + EndOfLine + "|Get|" + &u09 + EndOfLine + "|#If| |forUseInIDEScript| |=| |False"
+		  
+		  UnitTestTokenHelper "if    foo   =   bar    then", "if|    |foo|   |=|   |bar|    |then"
+		  
+		  UnitTestTokenHelper "dim s as string = \""foo bar \n then", "dim| |s| |as| |string| |=| |""foo bar " + ChrB(10) + " then"""
+		  
 		End Sub
 	#tag EndMethod
 
 	#tag Method, Flags = &h21
-		Private Sub UnitTest_InvalidMethodDeclarations()
+		Private Sub UnitTestTokenizeSource()
+		  #If debugbuild
+		    
+		    If True Then
+		      Dim source As String = "dim s as string = ""foo bar""" + EndOfLine + "dim i as integer" 
+		      Dim expected As String = "dim| |s| |as| |string| |=| |""foo bar""|" + EndOfLine + "|dim| |i| |as| |integer" 
+		      
+		      UnitTestSourceTokenizerHelper source, expected
+		    End If
+		    
+		    If True Then
+		      Dim source As String = "dim s as string = \""foo" + EndOfLine + "bar""" + EndOfLine + "dim i as integer" 
+		      Dim expected As String = "dim| |s| |as| |string| |=| |""foo" + EndOfLine + "bar""|" + EndOfLine + "|dim| |i| |as| |integer" 
+		      
+		      UnitTestSourceTokenizerHelper source, expected
+		    End If
+		    
+		  #EndIf
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTest_InvalidEnumDeclarations()
+		  // if true blocks because they crate a new scope 
+		  // so vars are not carried from oe block to another :P
+		  
+		  // =================================================================
+		  // these should all work
+		  //
+		  // =================================================================
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Enum"
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) = True
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Enum Foo Uint8"
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) = True
+		    
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Private Enum Foo as"
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) = True
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Attributes( bar  Enum Foo "
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) = True
+		    
+		  End If
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTest_InvalidEventDeclarations()
 		  // if true blocks because they crate a new scope 
 		  // so vars are not carried from oe block to another :P
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -2965,7 +4076,7 @@ Protected Module LanguageUtils
 		    
 		    content = ""
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
@@ -2977,6 +4088,7 @@ Protected Module LanguageUtils
 		  // =================================================================
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -2986,13 +4098,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3002,13 +4115,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3018,13 +4132,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name("
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3034,13 +4149,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name() as"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3050,13 +4166,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name as"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3066,13 +4183,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name() as string"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3081,13 +4199,14 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name( as"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3097,7 +4216,7 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name( as string"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
@@ -3108,6 +4227,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3117,13 +4237,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3133,13 +4254,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3149,13 +4271,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name("
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3165,13 +4288,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name( as"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3181,13 +4305,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name()"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3197,13 +4322,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name() as"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3213,13 +4339,14 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name() string"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3229,7 +4356,346 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name()"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> False
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name() as Assigns"
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTest_InvalidMethodDeclarations()
+		  // if true blocks because they crate a new scope 
+		  // so vars are not carried from oe block to another :P
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = ""
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  // =================================================================
+		  // these should NOT work
+		  //
+		  // SUBS
+		  // =================================================================
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name("
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name() as"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name as"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name() as string"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "sub name( as"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "sub name( as string"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  
+		  // FUNCTIONS
+		  // =================================================================
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name("
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name( as"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name()"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name() as"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name() string"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name()"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
+		    
+		    
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function name() as Assigns"
+		    
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> False
 		    
 		    
 		  End If
@@ -3370,6 +4836,24 @@ Protected Module LanguageUtils
 		    Dim optionalDefault As String
 		    
 		    
+		    src = "PROPERTY name as string"
+		    
+		    ErrorIf LanguageUtils.CrackPropertyDeclaration(src, isShared, scope, propName, isnew, type, optionalDefault) <> False
+		    
+		  End If
+		  // =======================
+		  
+		  // =======================
+		  If True Then
+		    Dim src As String
+		    Dim isShared As Boolean
+		    Dim scope As String
+		    Dim propName As String
+		    Dim isNew As Boolean
+		    Dim type As String
+		    Dim optionalDefault As String
+		    
+		    
 		    src = "PROPERTY name as string ="
 		    
 		    ErrorIf LanguageUtils.CrackPropertyDeclaration(src, isShared, scope, propName, isnew, type, optionalDefault) <> False
@@ -3428,6 +4912,409 @@ Protected Module LanguageUtils
 		  End If
 		  // =======================
 		  
+		  If True Then
+		    Dim src As String
+		    Dim isShared As Boolean
+		    Dim scope As String
+		    Dim propName As String
+		    Dim isNew As Boolean
+		    Dim type As String
+		    Dim optionalDefault As String
+		    
+		    
+		    src = "PUBLIC PROPERTY name as string"
+		    
+		    ErrorIf LanguageUtils.CrackPropertyDeclaration(src, isShared, scope, propName, isnew, type, optionalDefault) <> False
+		    
+		  End If
+		  
+		  // =======================
+		  
+		  If True Then
+		    Dim src As String
+		    Dim isShared As Boolean
+		    Dim scope As String
+		    Dim propName As String
+		    Dim isNew As Boolean
+		    Dim type As String
+		    Dim optionalDefault As String
+		    
+		    
+		    src = "SHARED PUBLIC PROPERTY name as string"
+		    
+		    ErrorIf LanguageUtils.CrackPropertyDeclaration(src, isShared, scope, propName, isnew, type, optionalDefault) <> False
+		    
+		  End If
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTest_ValidEnumDeclarations()
+		  // if true blocks because they crate a new scope 
+		  // so vars are not carried from oe block to another :P
+		  
+		  // =================================================================
+		  // these should all work
+		  //
+		  // SUBS
+		  // =================================================================
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Enum Foo "
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) <> True
+		    ErrorIf attrs <> ""
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf enumName <> "foo"
+		    ErrorIf type <> "Integer"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Enum Foo as Uint8"
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) <> True
+		    ErrorIf attrs <> ""
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf enumName <> "foo"
+		    ErrorIf type <> "Uint8"
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Private Enum Foo "
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) <> True
+		    ErrorIf attrs <> ""
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf enumName <> "foo"
+		    ErrorIf type <> "Integer"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim enumName As String
+		    Dim type As String
+		    
+		    content = "Attributes( bar ) Protected Enum Foo "
+		    
+		    ErrorIf LanguageUtils.CrackEnumDeclaration(content, attrs, scope, enumName, type) <> True
+		    ErrorIf attrs <> "bar"
+		    ErrorIf scope <> kScopeProtected
+		    ErrorIf enumName <> "foo"
+		    ErrorIf type <> "Integer"
+		  End If
+		  
+		End Sub
+	#tag EndMethod
+
+	#tag Method, Flags = &h21
+		Private Sub UnitTest_ValidEventDeclarations()
+		  // if true blocks because they crate a new scope 
+		  // so vars are not carried from oe block to another :P
+		  
+		  // =================================================================
+		  // these should all work
+		  //
+		  // SUBS
+		  // =================================================================
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Event Foo (  ) "
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "foo"
+		    ErrorIf params <> ""
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name()"
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> ""
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo as string)"
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo as string"
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo     as     string)"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo as string"
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo     as     string.string.string)"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo as string.string.string"
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo     as     string.string.string , bar     as     string.string.string)"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo as string.string.string , bar as string.string.string"
+		    ErrorIf returnType <> ""
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name() as string"
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> ""
+		    ErrorIf returnType <> "string"
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name() as string.string.string"
+		    
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> ""
+		    ErrorIf returnType <> "string.string.string"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo     as     string.string.string , bar     as     string.string.string) as string.string.string"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo as string.string.string , bar as string.string.string"
+		    ErrorIf returnType <> "string.string.string"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
+		    ErrorIf returnType <> "string.string.string"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string()"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
+		    ErrorIf returnType <> "string.string.string()"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string(,)"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "name"
+		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
+		    ErrorIf returnType <> "string.string.string()"
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Event getBoundPart(Str As String) As Object"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "Str As String"
+		    ErrorIf returnType <> "Object"
+		  End If
+		  
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Event getBoundPart(s as Ptr) As WindowPtr"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackEventDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePrivate
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "s as Ptr"
+		    ErrorIf returnType <> "WindowPtr"
+		  End If
+		  
 		End Sub
 	#tag EndMethod
 
@@ -3444,6 +5331,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3452,7 +5340,7 @@ Protected Module LanguageUtils
 		    
 		    content = "Public Sub Foo (  ) "
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "foo"
 		    ErrorIf params <> ""
@@ -3461,6 +5349,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3470,7 +5359,7 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name()"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> ""
@@ -3479,6 +5368,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3488,7 +5378,7 @@ Protected Module LanguageUtils
 		    
 		    content = "sub name(foo as string)"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo as string"
@@ -3497,6 +5387,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3507,7 +5398,7 @@ Protected Module LanguageUtils
 		    content = "sub name(foo     as     string)"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo as string"
@@ -3516,6 +5407,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3526,7 +5418,7 @@ Protected Module LanguageUtils
 		    content = "sub name(foo     as     string.string.string)"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo as string.string.string"
@@ -3535,6 +5427,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3545,7 +5438,7 @@ Protected Module LanguageUtils
 		    content = "sub name(foo     as     string.string.string , bar     as     string.string.string)"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo as string.string.string , bar as string.string.string"
@@ -3557,6 +5450,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3566,7 +5460,7 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name() as string"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> ""
@@ -3576,6 +5470,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3585,7 +5480,7 @@ Protected Module LanguageUtils
 		    
 		    content = "Function name() as string.string.string"
 		    
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> ""
@@ -3594,6 +5489,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3604,7 +5500,7 @@ Protected Module LanguageUtils
 		    content = "Function name(foo     as     string.string.string , bar     as     string.string.string) as string.string.string"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo as string.string.string , bar as string.string.string"
@@ -3613,6 +5509,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3623,7 +5520,7 @@ Protected Module LanguageUtils
 		    content = "Function name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
@@ -3632,6 +5529,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3642,7 +5540,7 @@ Protected Module LanguageUtils
 		    content = "Function name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string()"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
@@ -3651,6 +5549,7 @@ Protected Module LanguageUtils
 		  
 		  If True Then
 		    Dim content As String
+		    Dim attrs As String
 		    Dim scope As String
 		    Dim subFunc As String
 		    Dim methodName As String
@@ -3661,7 +5560,7 @@ Protected Module LanguageUtils
 		    content = "Function name(foo()     as     string.string.string , bar     as     string.string.string) as string.string.string(,)"
 		    
 		    // cracking will rip out multiple spaces
-		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
 		    ErrorIf scope <> kScopePublic
 		    ErrorIf methodName <> "name"
 		    ErrorIf params <> "foo() as string.string.string , bar as string.string.string"
@@ -3669,6 +5568,105 @@ Protected Module LanguageUtils
 		  End If
 		  
 		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    
+		    content = "Function getBoundPart(Str As String) As Object"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "Str As String"
+		    ErrorIf returnType <> "Object"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Function getBoundPart(s as Ptr) As WindowPtr"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "s as Ptr"
+		    ErrorIf returnType <> "WindowPtr"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Attributes(""foo"") Function getBoundPart(s As Ptr) As WindowPtr"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf attrs <> """foo"""
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "s as Ptr"
+		    ErrorIf returnType <> "WindowPtr"
+		  End If
+		  
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Attributes(""foo""=""asd"") Function getBoundPart(s As Ptr) As WindowPtr"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf attrs <> """foo""=""asd"""
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "s as Ptr"
+		    ErrorIf returnType <> "WindowPtr"
+		  End If
+		  
+		  If True Then
+		    Dim content As String
+		    Dim attrs As String
+		    Dim scope As String
+		    Dim subFunc As String
+		    Dim methodName As String
+		    Dim params As String
+		    Dim returnType As String
+		    
+		    content = "Attributes(""foo"" = ""asd"" , ""bar"" ) Function getBoundPart(s As Ptr) As WindowPtr"
+		    
+		    // cracking will rip out multiple spaces
+		    ErrorIf LanguageUtils.CrackMethodDeclaration(content, attrs, scope, subFunc, methodName, params, returnType) <> True
+		    ErrorIf attrs <> """foo""=""asd"",""bar"""
+		    ErrorIf scope <> kScopePublic
+		    ErrorIf methodName <> "getBoundPart"
+		    ErrorIf params <> "s as Ptr"
+		    ErrorIf returnType <> "WindowPtr"
+		  End If
 		  
 		End Sub
 	#tag EndMethod
@@ -3964,6 +5962,24 @@ Protected Module LanguageUtils
 		End Function
 	#tag EndMethod
 
+	#tag Method, Flags = &h1
+		Protected Function WhitespaceChars() As String
+		  // Return whether the first character of c is a whitespace character.
+		  Static retValue As String
+		  
+		  If retvalue.LenB <= 0 Then
+		    
+		    For i As Integer = 0 To 32
+		      retvalue = retvalue + ChrB(i)
+		    Next i
+		    
+		  End If
+		  
+		  Return retValue
+		  
+		End Function
+	#tag EndMethod
+
 
 	#tag Property, Flags = &h1
 		Protected mKeywordDict As Dictionary
@@ -4022,7 +6038,13 @@ Protected Module LanguageUtils
 	#tag EndComputedProperty
 
 
+	#tag Constant, Name = AllWhiteSpaceFlag, Type = Double, Dynamic = False, Default = \"3", Scope = Protected
+	#tag EndConstant
+
 	#tag Constant, Name = blockMatches, Type = String, Dynamic = False, Default = \"#if\t#else|#elseif|#endif\n#elseif\t#else|#elseif|#endif\n#else\t#endif\nif\telse|elseif|end|end if\nelseif\telse|elseif|end|end if\nelse\telse|end|end if|end select\nfor\tnext\ndo\tloop\nwhile\twend\nselect\tcase|else|end|end select\ncase\tcase|else|end|end select\ntry\tcatch|finally|end|end try\ncatch\tfinally|end|end try\nfinally\tend|end try\nsub\tend sub\nfunction\tend function\n", Scope = Protected
+	#tag EndConstant
+
+	#tag Constant, Name = EndOfLineFlag, Type = Double, Dynamic = False, Default = \"2", Scope = Protected
 	#tag EndConstant
 
 	#tag Constant, Name = kCLASS, Type = String, Dynamic = False, Default = \"Class", Scope = Protected
@@ -4032,6 +6054,9 @@ Protected Module LanguageUtils
 	#tag EndConstant
 
 	#tag Constant, Name = kDIM, Type = String, Dynamic = False, Default = \"Dim", Scope = Protected
+	#tag EndConstant
+
+	#tag Constant, Name = kEnum, Type = String, Dynamic = False, Default = \"Enum", Scope = Protected
 	#tag EndConstant
 
 	#tag Constant, Name = kPROPERTY, Type = String, Dynamic = False, Default = \"Property", Scope = Protected
@@ -4050,6 +6075,9 @@ Protected Module LanguageUtils
 	#tag EndConstant
 
 	#tag Constant, Name = kSTATIC, Type = String, Dynamic = False, Default = \"Static", Scope = Protected
+	#tag EndConstant
+
+	#tag Constant, Name = NoWhiteSpaceFlag, Type = Double, Dynamic = False, Default = \"1", Scope = Protected
 	#tag EndConstant
 
 	#tag Constant, Name = parseFailure, Type = Boolean, Dynamic = False, Default = \"false", Scope = Protected

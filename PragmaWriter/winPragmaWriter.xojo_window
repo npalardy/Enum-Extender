@@ -177,6 +177,7 @@ End
 		  For Each srcline As String In allSrclines
 		    
 		    Dim scopeStr As String
+		    Dim attrsStr As String
 		    Dim subFuncStr As String
 		    Dim methodNameStr As String
 		    Dim paramStr As String
@@ -184,7 +185,7 @@ End
 		    
 		    resultLines.append srcline
 		    
-		    If LanguageUtils.CrackMethodDeclaration(srcline, scopeStr, subFuncStr, methodNameStr, paramStr, returnTypeStr) = True Then
+		    If LanguageUtils.CrackMethodDeclaration(srcline, attrsStr, scopeStr, subFuncStr, methodNameStr, paramStr, returnTypeStr) = True Then
 		      
 		      // ok so params is one giant string with ALL params
 		      // we need it split up

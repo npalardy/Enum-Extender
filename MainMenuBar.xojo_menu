@@ -144,6 +144,14 @@ Begin Menu MainMenuBar
          AutoEnable = True
          Visible = True
       End
+      Begin MenuItem ViewPropertyPaster
+         SpecialMenu = 0
+         Index = -2147483648
+         Text = "Property Paster"
+         AutoEnabled = True
+         AutoEnable = True
+         Visible = True
+      End
    End
 End
 #tag EndMenu
