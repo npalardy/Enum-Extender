@@ -214,7 +214,7 @@ End
 		    Dim type As String
 		    Dim optionalDefault As String
 		    
-		    if LanguageUtils.CrackPropertyDeclaration(line, isShared, scope, propName, isNew, type, optionalDefault) <> True then
+		    if LanguageUtils.CrackPropertyDeclaration(line, isShared, scope, propName, isNew, type, optionalDefault, true) <> True then
 		      //flag that line as not a property in the original text ?
 		      Continue
 		    End If
